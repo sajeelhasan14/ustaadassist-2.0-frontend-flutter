@@ -36,14 +36,56 @@ class TodayClass {
   String get shortStart => startTime.length >= 5 ? startTime.substring(0, 5) : startTime;
 }
 
+/// A section with students below the teacher's attendance line.
+class AttendanceAlert {
+  AttendanceAlert.fromJson(Map<String, dynamic> json)
+      : sectionId = json['sectionId'] as String,
+        sectionName = json['sectionName'] as String,
+        courseId = json['courseId'] as String,
+        courseCode = json['courseCode'] as String,
+        below = json['below'] as int,
+        min = json['min'] as num;
+
+  final String sectionId;
+  final String sectionName;
+  final String courseId;
+  final String courseCode;
+  final int below;
+  final num min;
+}
+
+/// An assessment the teacher chose to give a date. Most have none, so this list is often empty.
+class ComingUp {
+  ComingUp.fromJson(Map<String, dynamic> json)
+      : name = json['name'] as String,
+        date = json['date'] as String,
+        courseId = json['courseId'] as String,
+        courseCode = json['courseCode'] as String;
+
+  final String name;
+  final String date;
+  final String courseId;
+  final String courseCode;
+}
+
 class HomeData {
-  HomeData({required this.teacherName, required this.date, required this.offDay, required this.classes, required this.courses});
+  HomeData({
+    required this.teacherName,
+    required this.date,
+    required this.offDay,
+    required this.classes,
+    required this.courses,
+    this.alerts = const [],
+    this.comingUp = const [],
+  });
 
   final String teacherName;
   final String date;
   final String? offDay;
   final List<TodayClass> classes;
   final List<Course> courses;
+  final List<AttendanceAlert> alerts;
+  final List<ComingUp> comingUp;
 
   /// The class to act on next: the first one still to happen today.
   TodayClass? get nextClass => classes.where((item) => item.status == 'planned').firstOrNull;
@@ -63,6 +105,8 @@ abstract final class HomeApi {
       offDay: today['offDay']?['name'] as String?,
       classes: [for (final item in today['classes'] as List) TodayClass.fromJson(item as Map<String, dynamic>)],
       courses: [for (final item in courses) Course.fromJson(item as Map<String, dynamic>)],
+      alerts: [for (final item in today['attendanceAlerts'] as List? ?? const []) AttendanceAlert.fromJson(item as Map<String, dynamic>)],
+      comingUp: [for (final item in today['comingUp'] as List? ?? const []) ComingUp.fromJson(item as Map<String, dynamic>)],
     );
   }
 }

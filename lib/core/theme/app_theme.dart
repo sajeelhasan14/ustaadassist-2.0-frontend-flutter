@@ -88,7 +88,7 @@ abstract final class AppTheme {
         foregroundColor: AppColors.text,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleTextStyle: AppText.rowTitle,
+        titleTextStyle: AppText.rowTitle.copyWith(color: AppColors.text),
       ),
       progressIndicatorTheme: const ProgressIndicatorThemeData(
         color: AppColors.green,

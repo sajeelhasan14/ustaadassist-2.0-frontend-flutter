@@ -73,6 +73,10 @@ class AttendanceReport {
 }
 
 abstract final class AttendanceApi {
+  /// One absence out of fewer classes already drops a student below 75%, so warning earlier would flag
+  /// everyone who missed a single class. The backend's Home alert uses the same number.
+  static const minClassesForAlert = 4;
+
   /// A planned class has no id yet, so it's created first. Doing that twice is harmless.
   static Future<AttendanceSheet> open(ClassRef ref) async {
     final created = await api.post('/sections/${ref.sectionId}/sessions', {'date': ref.date, 'startTime': ref.startTime});

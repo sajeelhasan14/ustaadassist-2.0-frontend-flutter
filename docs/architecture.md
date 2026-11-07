@@ -77,7 +77,8 @@ lib/
 | `lib/features/materials/` | Course files. [Flow](flows/materials-dashboard.md) | course screen |
 | `lib/features/plan/` | Weeks, outline, fixing a shortfall. [Flow](flows/plan.md) | course screen |
 | `lib/features/dashboard/` | How a section is doing. [Flow](flows/materials-dashboard.md) | course screen |
-| `lib/features/assistant/` | The placeholder button and sheet | Home, course screen |
+| `lib/features/assistant/` | The assistant button, chat, voice and Confirm cards. [Flow](flows/materials-dashboard.md) | Home, course screen |
+| `lib/features/profile/` | The Me screen and the attendance line | main shell |
 | `test/support/fake_backend.dart` | A stand-in API with the real reply shapes, used to drive every screen in tests | `test/` |
 | `dart_defines.json` | Your local settings. Not in git; copy `dart_defines.example.json` | `flutter run` |
 | `design_inspo/UstaadAssist UI Design.html` | The design file. Screens 22–37 are the Night versions we build from | you, me |

@@ -1,5 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/dates.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../shared/widgets/async_body.dart';
@@ -179,7 +180,11 @@ class _Row extends StatelessWidget {
                   Text(item.name, style: AppText.rowTitle),
                   const SizedBox(height: 2),
                   Text(
-                    '${markText(item.maxMarks)} marks · ${item.marksEntered} of $students entered',
+                    [
+                      '${markText(item.maxMarks)} marks',
+                      '${item.marksEntered} of $students entered',
+                      if (item.date != null) shortDate(item.date!),
+                    ].join(' · '),
                     style: AppText.small.copyWith(color: AppColors.textMuted),
                   ),
                 ],
@@ -222,6 +227,7 @@ class _AssessmentDialogState extends State<_AssessmentDialog> {
     text: markText(widget.assessment?.maxMarks ?? widget.list.unallocated),
   );
   late bool _isLab = widget.assessment?.isLab ?? false;
+  late String? _date = widget.assessment?.date;
   bool _busy = false;
   String? _error;
 
@@ -234,6 +240,17 @@ class _AssessmentDialogState extends State<_AssessmentDialog> {
       number++;
     }
     return '$base $number';
+  }
+
+  Future<void> _pickDate() async {
+    final saved = _date == null ? null : DateTime.parse(_date!);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: saved ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) setState(() => _date = isoDate(picked));
   }
 
   @override
@@ -257,9 +274,9 @@ class _AssessmentDialogState extends State<_AssessmentDialog> {
     try {
       final item = widget.assessment;
       if (item == null) {
-        await MarksApi.add(widget.courseId, name: name, maxMarks: marks, isLab: _isLab);
+        await MarksApi.add(widget.courseId, name: name, maxMarks: marks, isLab: _isLab, date: _date);
       } else {
-        await MarksApi.update(item.id, name: name, maxMarks: marks, isLab: _isLab);
+        await MarksApi.update(item.id, name: name, maxMarks: marks, isLab: _isLab, date: _date);
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
@@ -306,6 +323,19 @@ class _AssessmentDialogState extends State<_AssessmentDialog> {
               style: AppText.mono,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(labelText: 'Marks', helperText: '${markText(widget.list.unallocated)} of ${markText(widget.list.totalMarks)} left'),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('Date', style: AppText.rowTitle),
+              subtitle: Text(_date == null ? 'Optional' : longDate(_date!), style: AppText.small.copyWith(color: AppColors.textMuted)),
+              trailing: _date == null
+                  ? null
+                  : IconButton(
+                      tooltip: 'Remove date',
+                      icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.textMuted),
+                      onPressed: () => setState(() => _date = null),
+                    ),
+              onTap: _pickDate,
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,

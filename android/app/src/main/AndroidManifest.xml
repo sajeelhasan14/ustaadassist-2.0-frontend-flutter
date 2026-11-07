@@ -1,8 +1,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Debug builds get this automatically; a release build can't reach the backend without it. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Voice questions to the assistant. The phone asks the teacher first. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <application
-        android:label="ustaad_assist"
+        android:label="UstaadAssist"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -39,6 +41,10 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <!-- Lets the app find the phone's speech recognition. -->
+        <intent>
+            <action android:name="android.speech.RecognitionService"/>
+        </intent>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

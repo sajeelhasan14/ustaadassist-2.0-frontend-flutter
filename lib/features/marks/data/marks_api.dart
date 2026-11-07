@@ -6,12 +6,14 @@ class Assessment {
         name = json['name'] as String,
         maxMarks = json['maxMarks'] as num,
         isLab = json['isLab'] as bool? ?? false,
+        date = json['date'] as String?,
         marksEntered = json['marksEntered'] as int? ?? 0;
 
   final String id;
   final String name;
   final num maxMarks;
   final bool isLab; // counts in the Lab column of the result sheet
+  final String? date; // optional, and usually empty: assessments are added whenever the teacher likes
   final int marksEntered;
 }
 
@@ -60,11 +62,12 @@ abstract final class MarksApi {
   static Future<AssessmentList> assessments(String courseId) async =>
       AssessmentList.fromJson(await api.get('/courses/$courseId/assessments') as Map<String, dynamic>);
 
-  static Future<void> add(String courseId, {required String name, required num maxMarks, required bool isLab}) =>
-      api.post('/courses/$courseId/assessments', {'name': name, 'maxMarks': maxMarks, 'isLab': isLab});
+  static Future<void> add(String courseId, {required String name, required num maxMarks, required bool isLab, String? date}) =>
+      api.post('/courses/$courseId/assessments', {'name': name, 'maxMarks': maxMarks, 'isLab': isLab, 'date': ?date});
 
-  static Future<void> update(String id, {required String name, required num maxMarks, required bool isLab}) =>
-      api.patch('/assessments/$id', {'name': name, 'maxMarks': maxMarks, 'isLab': isLab});
+  /// A null [date] is sent on purpose: it clears any date already saved.
+  static Future<void> update(String id, {required String name, required num maxMarks, required bool isLab, String? date}) =>
+      api.patch('/assessments/$id', {'name': name, 'maxMarks': maxMarks, 'isLab': isLab, 'date': date});
 
   static Future<void> remove(String id) => api.delete('/assessments/$id');
 

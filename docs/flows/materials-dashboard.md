@@ -36,8 +36,32 @@ Files: [dashboard_screen.dart](../../lib/features/dashboard/screens/dashboard_sc
 
 Chart choices: one series, so no legend; the real number sits beside each bar, so colour is never the only way to read it; a bar turns coral below 50%, the university's pass line. Tapping **At risk** opens the attendance report.
 
-## Assistant (placeholder)
+## Assistant
 
-File: [assistant_sheet.dart](../../lib/features/assistant/screens/assistant_sheet.dart)
+Files: [assistant_sheet.dart](../../lib/features/assistant/screens/assistant_sheet.dart) ·
+[assistant_api.dart](../../lib/features/assistant/data/assistant_api.dart) ·
+backend: `backend/docs/flows/assistant.md`
 
-The button on Home and the course screen opens a sheet saying the assistant is coming. It sends nothing anywhere. The real one is paused; `backend/docs/flows/assistant.md` records where it stopped. When it returns, only this file's sheet needs replacing.
+### Trace: asking a question inside a course
+
+```
+Course screen: tap the sparkle button
+   │  AssistantButton gets the course id and the chosen section's id
+AssistantSheet: type or speak, tap Send
+   │  _send() adds the bubble, _ask() shows the dots
+AssistantApi.ask()
+   │  POST /assistant { message, history, courseId, sectionId }, with the long AI time limit
+backend: Gemini reads through its tools and answers
+   │  { reply, proposals, stats }
+AssistantSheet: shows the reply, the tiles and any Confirm cards
+```
+
+- **Nothing is saved.** The conversation lives in the sheet and ends when it closes. The app sends the earlier messages with each question, at most 40.
+- **A failed question stays.** Try again asks the same thing, without a second bubble.
+- **Confirm is the only way a change happens.** `_ProposalCard` calls `AssistantApi.confirm()`, which sends the prepared request through the normal routes. Then `onChanged` reloads the screen behind.
+- **Voice fills the box and stops.** The teacher reads it and taps Send, because a misheard word is easy to miss. If voice isn't available, a short note says so and typing still works.
+
+### Try it
+
+With the backend running, open the assistant on a course and tap "Am I behind on my plan?". Then type "Cancel my next class" and tap Not now, to see that nothing changes.
+

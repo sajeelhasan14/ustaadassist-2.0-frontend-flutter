@@ -113,3 +113,10 @@ A private web address that works for a short time, like a visitor's badge that e
 
 `setState(() => _data = load())` looks harmless, but the arrow returns what it assigned, and that's a `Future`. Flutter treats this as a mistake and stops in debug mode. Writing it with a block, `setState(() { _data = load(); });`, returns nothing. Every screen that reloads uses the block form.
 
+## Speech recognition
+
+The phone turns spoken words into text, like someone taking dictation. The `speech_to_text` package asks the phone's own service to do this, so the app needs the microphone permission, and the phone asks the teacher first. It works in whatever language the phone is set to.
+
+## Bottom sheet
+
+A panel that slides up over the current screen, like pulling a drawer. The screen behind stays where it was, so closing the assistant puts the teacher back exactly where they were.

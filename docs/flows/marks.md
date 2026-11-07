@@ -55,3 +55,7 @@ The database can't tell "absent" from "not entered yet", so both show as `–`. 
 1. Open **Marks**, add `Quiz` worth 10, tap it.
 2. Enter `8.5`, then **Save and next**. The strip shows the mark at once.
 3. Type `11`: the panel turns coral, says **Too high**, and the save button turns off.
+
+## Optional dates
+
+The Add and Edit assessment box has a Date row that says Optional. Leave it and nothing is sent. Pick a date and the assessment shows it, and it appears under Coming up on Home until the day passes. The cross removes it. Nothing ever asks for a date, because a teacher adds assessments whenever they like.

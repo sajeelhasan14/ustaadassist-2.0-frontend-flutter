@@ -45,6 +45,15 @@ Cancelling sends `POST /sections/<id>/sessions` with `status: "cancelled"`. Rest
 
 `AttendanceReportScreen` reads `GET /sections/<id>/attendance`. The backend works out each percentage and who is short (below 75%). The screen only sorts the short students to the top, lowest first.
 
+## The warning
+
+Two places tell the teacher about shortage, and both use the line from the Me screen.
+
+- **After saving:** `_warnIfShort()` reads the report and shows the students who were absent today and are now below the line. Students who were already short and came today aren't repeated. If the report fails to load nothing is shown, because the attendance is already saved.
+- **On Home:** an amber card per section with anyone below the line, from `attendanceAlerts` in `GET /today`. Tapping it opens the report. Pull down on Home to refresh it after changing the line.
+
+Neither counts a student until they have 4 marked classes, because with fewer, a single absence falls below 75%.
+
 ## Try it
 
 1. Sign in, open a course with students and a timetable.

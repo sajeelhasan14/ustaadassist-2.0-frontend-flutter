@@ -8,6 +8,7 @@ import '../../../shared/widgets/async_body.dart';
 import '../../../shared/widgets/card_list.dart';
 import '../../../shared/widgets/empty_note.dart';
 import '../../../shared/widgets/hero_panel.dart';
+import '../../../shared/widgets/prompts.dart';
 import '../../courses/data/courses_api.dart';
 import '../data/attendance_api.dart';
 
@@ -38,6 +39,22 @@ class _TakeAttendanceScreenState extends State<TakeAttendanceScreen> {
     return sheet;
   }
 
+  /// After saving, says who just fell short. Only today's absentees: the teacher already knows about the rest.
+  /// The attendance is saved by now, so failing to load this mustn't stop anything.
+  Future<void> _warnIfShort() async {
+    try {
+      final report = await AttendanceApi.report(widget.classRef.sectionId);
+      final short = report.short.where((item) => _absent.contains(item.id) && item.marked >= AttendanceApi.minClassesForAlert).toList();
+      if (short.isEmpty || !mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (_) => _ShortWarning(students: short, line: report.min, course: widget.classRef.title),
+      );
+    } catch (_) {
+      // Home and the report still show it.
+    }
+  }
+
   Future<void> _save(AttendanceSheet sheet) async {
     setState(() {
       _busy = true;
@@ -45,6 +62,7 @@ class _TakeAttendanceScreenState extends State<TakeAttendanceScreen> {
     });
     try {
       await AttendanceApi.save(sheet.sessionId, absent: _absent.toList(), topicIds: [for (final topic in _topics) topic.id]);
+      await _warnIfShort();
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
       if (mounted) {
@@ -135,6 +153,52 @@ class _TakeAttendanceScreenState extends State<TakeAttendanceScreen> {
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _ShortWarning extends StatelessWidget {
+  const _ShortWarning({required this.students, required this.line, required this.course});
+
+  final List<StudentAttendance> students;
+  final num line;
+  final String course;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: AppColors.warning,
+      child: HeroPanel(
+        label: 'ATTENDANCE WARNING',
+        tone: HeroTone.warning,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${students.length} ${students.length == 1 ? 'student' : 'students'} below ${markText(line)}%',
+              style: AppText.cardTitle.copyWith(color: AppColors.onGreen, fontSize: 24),
+            ),
+            const SizedBox(height: 4),
+            Text(course, style: AppText.rowTitle.copyWith(color: AppColors.onGreen)),
+            const SizedBox(height: 12),
+            for (final student in students)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text('${student.fullName} · ${student.percentage}%', style: AppText.body.copyWith(color: AppColors.onGreen)),
+              ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: AppColors.onGreen, foregroundColor: AppColors.text),
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ),
+          ],
         ),
       ),
     );

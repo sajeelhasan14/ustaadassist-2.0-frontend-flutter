@@ -82,7 +82,10 @@ class _CourseScreenState extends State<CourseScreen> {
       appBar: AppBar(
         title: Text(_course.code),
         actions: [
-          const AssistantButton(),
+          FutureBuilder<CourseOverview>(
+            future: _data,
+            builder: (context, snapshot) => AssistantButton(courseId: _course.id, sectionId: snapshot.data?.section.id, onChanged: _reload),
+          ),
           FutureBuilder<CourseOverview>(
             future: _data,
             builder: (context, snapshot) => IconButton(

@@ -1,14 +1,18 @@
 import 'package:material_ui/material_ui.dart';
 
+import '../../../core/dates.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_body.dart';
 import '../../../shared/widgets/hero_panel.dart';
+import '../../../shared/widgets/prompts.dart';
 import '../../../shared/widgets/status_pill.dart';
 import '../../assistant/screens/assistant_sheet.dart';
 import '../../attendance/data/attendance_api.dart';
+import '../../attendance/screens/attendance_report_screen.dart';
 import '../../attendance/screens/take_attendance_screen.dart';
+import '../../courses/data/courses_api.dart';
 import '../../courses/screens/course_screen.dart';
 import '../../setup/screens/setup_basics_screen.dart';
 import '../data/home_api.dart';
@@ -43,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
             _reload();
             await _data;
           },
-          child: HomeView(data: data, onOpen: _open),
+          child: HomeView(data: data, onOpen: _open, onChanged: _reload),
         ),
       ),
     );
@@ -52,10 +56,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
 /// Separate from the loading code so it can be tested with made-up data.
 class HomeView extends StatelessWidget {
-  const HomeView({super.key, required this.data, required this.onOpen});
+  const HomeView({super.key, required this.data, required this.onOpen, this.onChanged});
 
   final HomeData data;
   final ValueChanged<Widget> onOpen;
+  final VoidCallback? onChanged; // something changed from the assistant, so reload
 
   String get _greeting {
     final hour = DateTime.now().hour;
@@ -66,6 +71,19 @@ class HomeView extends StatelessWidget {
   Widget _attendanceFor(TodayClass item) => TakeAttendanceScreen(
         classRef: ClassRef(sectionId: item.sectionId, date: data.date, startTime: item.shortStart, title: item.courseTitle),
       );
+
+  /// The screen for an alert: its course may be from an older semester, which Home doesn't list.
+  VoidCallback? _reportFor(AttendanceAlert alert) {
+    final course = data.courses.where((item) => item.id == alert.courseId).firstOrNull;
+    if (course == null) return null;
+    final section = Section.fromJson({'id': alert.sectionId, 'name': alert.sectionName, 'studentCount': 0});
+    return () => onOpen(AttendanceReportScreen(course: course, section: section));
+  }
+
+  VoidCallback? _courseFor(ComingUp item) {
+    final course = data.courses.where((one) => one.id == item.courseId).firstOrNull;
+    return course == null ? null : () => onOpen(CourseScreen(course: course));
+  }
 
   String get _initials =>
       data.teacherName.trim().split(RegExp(r'\s+')).where((word) => word.isNotEmpty).take(2).map((word) => word[0].toUpperCase()).join();
@@ -88,7 +106,7 @@ class HomeView extends StatelessWidget {
                 ],
               ),
             ),
-            const AssistantButton(),
+            AssistantButton(onChanged: onChanged),
             const SizedBox(width: 4),
             Container(
               width: 44,
@@ -129,6 +147,10 @@ class HomeView extends StatelessWidget {
           )
         else
           _NothingLeft(hadClasses: data.classes.isNotEmpty),
+        for (final alert in data.alerts) ...[
+          const SizedBox(height: 12),
+          _AlertCard(alert: alert, onTap: _reportFor(alert)),
+        ],
         const SizedBox(height: 24),
         if (data.classes.isNotEmpty) ...[
           Text('TODAY', style: AppText.label),
@@ -138,6 +160,13 @@ class HomeView extends StatelessWidget {
               item: item,
               onTap: item.status == 'planned' || item.status == 'held' ? () => onOpen(_attendanceFor(item)) : null,
             ),
+          const SizedBox(height: 14),
+        ],
+        // Only when an assessment happens to have a date. Otherwise this part simply isn't here.
+        if (data.comingUp.isNotEmpty) ...[
+          Text('COMING UP', style: AppText.label),
+          const SizedBox(height: 10),
+          for (final item in data.comingUp) _ComingUpRow(item: item, onTap: _courseFor(item)),
           const SizedBox(height: 14),
         ],
         Text('MY COURSES', style: AppText.label),
@@ -171,6 +200,76 @@ class _NothingLeft extends StatelessWidget {
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(AppRadius.card)),
       child: Text(hadClasses ? 'All done for today.' : 'No classes today.', style: AppText.cardTitle),
+    );
+  }
+}
+
+/// Students below the line in one section. Tapping shows who.
+class _AlertCard extends StatelessWidget {
+  const _AlertCard({required this.alert, required this.onTap});
+
+  final AttendanceAlert alert;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: HeroPanel(
+        label: 'ATTENDANCE WARNING',
+        tone: HeroTone.warning,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${alert.below} ${alert.below == 1 ? 'student' : 'students'} below ${markText(alert.min)}%',
+              style: AppText.cardTitle.copyWith(color: AppColors.onGreen, fontSize: 24),
+            ),
+            const SizedBox(height: 4),
+            Text('${alert.courseCode} · Section ${alert.sectionName}', style: AppText.rowTitle.copyWith(color: AppColors.onGreen)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ComingUpRow extends StatelessWidget {
+  const _ComingUpRow({required this.item, required this.onTap});
+
+  final ComingUp item;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(AppRadius.inner),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.inner),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+            child: Row(
+              children: [
+                Text(shortDate(item.date), style: AppText.mono),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(item.name, style: AppText.rowTitle, overflow: TextOverflow.ellipsis),
+                      Text(item.courseCode, style: AppText.small.copyWith(color: AppColors.textMuted), overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
