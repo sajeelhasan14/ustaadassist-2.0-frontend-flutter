@@ -54,8 +54,9 @@ lib/
 | `lib/features/auth/data/auth_service.dart` | Sign in, sign up, sign out, straight to Supabase | auth screens, `app.dart`, Me |
 | `lib/features/auth/screens/` | Welcome, Sign in, Sign up | `app.dart` |
 | `lib/features/home/data/home_api.dart` | Loads today's classes and courses | Home |
-| `lib/features/home/screens/main_shell.dart` | The bottom tabs | `app.dart` |
-| `lib/features/home/screens/home_screen.dart` | Today at a glance | `main_shell.dart` |
+| `lib/features/home/screens/main_shell.dart` | The bottom tabs: **Courses** and Me | `app.dart` |
+| `lib/features/home/screens/my_courses_screen.dart` | The first screen: every course by name (one `GET /courses`), **New course**, and "Create your first course" for a new teacher. [Flow](flows/my-courses.md) | `main_shell.dart` |
+| `lib/features/home/screens/home_screen.dart` | Today at a glance. **Not shown since 2026-11-09**; its parts move inside each course in the next step | nothing yet |
 | `lib/features/profile/screens/me_screen.dart` | The account tab | `main_shell.dart` |
 | `lib/core/dates.dart` | Dates as text: `isoDate`, `shortDate`, `longDate` | screens that show dates |
 | `lib/shared/widgets/step_scaffold.dart` | The frame of a step-by-step flow: step pill, two-line heading, one main button | setup screens |
