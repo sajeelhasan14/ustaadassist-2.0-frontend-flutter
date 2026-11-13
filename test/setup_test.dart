@@ -33,7 +33,7 @@ Future<void> show(WidgetTester tester, SectionPlan plan, {double width = 390, Li
   final section = Section.fromJson(const {'id': 's1', 'name': 'A', 'studentCount': 0});
   await tester.pumpWidget(
     MaterialApp(
-      theme: AppTheme.night,
+      theme: AppTheme.current,
       home: Scaffold(
         body: CourseView(
           course: Course.fromJson(const {'id': 'c1', 'code': 'CS-301', 'title': 'Database Systems'}),
@@ -72,6 +72,8 @@ void main() {
   testWidgets('on track shows the classes left and the topics', (tester) async {
     await show(tester, SectionPlan.fromJson(planJson(topics: [topicJson('Normalization', 'in_progress')])));
     expect(find.text('12 classes left'), findsOneWidget);
+    // The topic list sits below the bento tiles, so scroll down to it first.
+    await tester.scrollUntilVisible(find.text('Normalization'), 200);
     expect(find.text('Normalization'), findsOneWidget);
     expect(find.text('In progress'), findsOneWidget);
     expect(find.text('3 classes · from 01 SEP'), findsOneWidget);

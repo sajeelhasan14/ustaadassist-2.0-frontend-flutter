@@ -191,7 +191,7 @@ class _Option extends StatelessWidget {
           color: AppColors.card,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadius.inner),
-            side: BorderSide(color: selected ? AppColors.green : Colors.transparent, width: 1.5),
+            side: BorderSide(color: selected ? AppColors.greenText : Colors.transparent, width: 1.5),
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(AppRadius.inner),
@@ -201,7 +201,7 @@ class _Option extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded, color: selected ? AppColors.green : AppColors.textMuted),
+                  Icon(selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded, color: selected ? AppColors.greenText : AppColors.textMuted),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(

@@ -30,8 +30,9 @@ abstract final class AppText {
   static final pill = GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700);
 
   /// Small section label above a block ("MY COURSES"). Write the text itself in
-  /// capitals; the 0.14em spacing is 1.5px at 11px.
-  static final label = GoogleFonts.plusJakartaSans(
+  /// capitals; the 0.14em spacing is 1.5px at 11px. A getter (not `final`)
+  /// because its grey is different in light and dark mode.
+  static TextStyle get label => GoogleFonts.plusJakartaSans(
     fontSize: 11,
     fontWeight: FontWeight.w700,
     letterSpacing: 1.5,

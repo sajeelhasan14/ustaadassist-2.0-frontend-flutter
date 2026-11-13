@@ -64,7 +64,7 @@ class _ExtraClassDialogState extends State<ExtraClassDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.card,
+      backgroundColor: AppColors.sheet,
       title: Text('Extra class', style: AppText.cardTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,

@@ -120,3 +120,76 @@ The phone turns spoken words into text, like someone taking dictation. The `spee
 ## Bottom sheet
 
 A panel that slides up over the current screen, like pulling a drawer. The screen behind stays where it was, so closing the assistant puts the teacher back exactly where they were.
+
+## Light and dark mode
+
+The phone has a setting: light or dark. The app reads it and uses the matching colours. Like a classroom with day lights and night lights: same room, same furniture, different lighting. In `app_colors.dart` each colour has both values on one line, `_pick(dark, light)`, and `AppColors.isLight` decides which one comes back.
+
+## Getter
+
+A name that runs a tiny bit of code every time you read it, instead of storing a value once. `static Color get text => ...` works out the text colour fresh each time, so after the phone switches to light mode the same `AppColors.text` gives the light value. A `final` would keep whatever it was the first time, like a photo instead of a window.
+
+## `const`
+
+Tells Dart "this value is fixed forever, build it once when the app is made". `const Icon(color: AppColors.text)` used to be allowed because the colour was fixed. Now the colour depends on the mode, so Dart refuses `const` there, and we removed it in those places.
+
+## Observer (`WidgetsBindingObserver`)
+
+A widget that asks Flutter "tell me when something about the phone changes". `app.dart` is one. When the phone switches light/dark, Flutter calls its `didChangePlatformBrightness()`. Like asking the school office to ring you when the timetable changes, instead of checking every minute.
+
+## Redrawing every widget (`markNeedsBuild`)
+
+Flutter normally only redraws widgets that it knows depend on something that changed. Our screens read `AppColors` directly, so Flutter can't know they depend on the mode. On a mode switch, `app.dart` walks through every widget on screen and marks it "needs a redraw". Unlike restarting the app, this keeps the open screen and anything typed in it.
+
+
+## Frosted glass (`BackdropFilter`)
+
+A card you can half see through, like a frosted bathroom window: the colours behind it show, but blurred. `BackdropFilter` blurs whatever is already painted behind it. The dock and the glass menu use it. Plain cards don't blur (that would be slow in a long list); they are just see-through, so the glow shows faintly through them.
+
+## Radial gradient (the glow)
+
+A colour strongest at one point and fading to nothing around it, like a torch on a wall. `GlowBackground` paints a green one top-left, a violet one top-right and a faint green one at the bottom.
+
+## Page transition builder
+
+When a new screen opens, Flutter asks the theme "how should it slide in?". We answer with Flutter's normal animation, but with the screen placed on the glow first. That is how every screen gets the glow without each one adding it.
+
+## `ValueNotifier`
+
+A box holding one value that rings a bell when the value changes. `Appearance.choice` is one: the Me screen changes it, and `app.dart` hears the bell and redraws in the new mode.
+
+## Saved on the phone (`SharedPreferences`)
+
+A small notebook the app keeps on the phone that survives closing it. We write two things in it: the Appearance choice and each course's colour. It never leaves the phone, so a second phone starts fresh.
+
+## Route
+
+One layer on the navigator's stack: each screen is a route, and so are dialogs and our glass menu. `PopupRoute` is a see-through layer that closes when you tap outside it. Popping a route can hand a value back: the glass menu hands back the action that was chosen.
+
+## Overlay
+
+A see-through sheet above every screen, where things float that don't belong to one screen. The confetti goes there, so it keeps playing after the attendance screen closes.
+
+## `AnimationController` and ticker
+
+An `AnimationController` is a number that moves from 0 to 1 over a set time, like a stopwatch hand. It needs a ticker, a clock that ticks once per frame; `SingleTickerProviderStateMixin` gives a widget one. The loading shapes and the confetti use it. `TweenAnimationBuilder` (used by `CountUp`) is the shortcut when you just want a value to move once, with no controller.
+
+## `CustomPainter`
+
+Drawing by hand on a canvas: "a circle here, a line there". The progress ring and the confetti are drawn this way, because no ready-made widget draws them.
+
+## Safe delete
+
+Instead of a pop-up "Are you sure?", the Delete line itself turns red and says "Tap again to delete". The second tap deletes; tapping anything else cancels. One less screen to read, same protection. Used where only one item is lost.
+
+## One-time code (OTP)
+
+A short code that works once, like the PIN a bank texts you. For "forgot password" Supabase emails a 6-digit code; typing it in proves the email is yours, so the app may set a new password. We use the code instead of the email's link because a link would have to open the app from a web address (a "deep link"), which needs extra setup on the phone.
+
+## Moving data in a migration
+
+A migration can change the shape of a table *and* move the data into the new shape, in the same file. Holidays used to belong to the teacher; the 2026-11-11 migration copies each one into every course it touches, then removes the old copies. Like moving a school's one shared notice board into a notice board per classroom: every notice is pinned up again in each room it concerns.
+
+## JSON in a column (`jsonb`)
+
+A database column can hold a small structured value, not just one number or word. A course's grade scale is a list like `[{"grade": "A+", "min": 90}, ...]` kept in `courses.grade_scale`. Empty (null) means "use the default scale".

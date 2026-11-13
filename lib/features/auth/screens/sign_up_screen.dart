@@ -84,7 +84,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   List<Widget> _confirmation() => [
         Text('Check your', style: AppText.heroTitle),
-        Text('email.', style: AppText.heroTitle.copyWith(color: AppColors.green)),
+        Text('email.', style: AppText.heroTitle.copyWith(color: AppColors.greenText)),
         const SizedBox(height: 12),
         Text('Open the link we sent to ${_email.text.trim()}, then sign in.', style: AppText.body.copyWith(color: AppColors.textMuted)),
         const SizedBox(height: 24),
@@ -96,7 +96,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   List<Widget> _form() => [
         Text('Create your', style: AppText.heroTitle),
-        Text('account.', style: AppText.heroTitle.copyWith(color: AppColors.green)),
+        Text('account.', style: AppText.heroTitle.copyWith(color: AppColors.greenText)),
         const SizedBox(height: 28),
         TextField(
           controller: _name,

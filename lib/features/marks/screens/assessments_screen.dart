@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../core/dates.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
+import '../../../shared/widgets/glass_menu.dart';
 import '../../../shared/widgets/async_body.dart';
 import '../../../shared/widgets/card_list.dart';
 import '../../../shared/widgets/empty_note.dart';
@@ -191,14 +192,13 @@ class _Row extends StatelessWidget {
               ),
             ),
             if (item.isLab) const StatusPill('Lab', tone: PillTone.setup),
-            PopupMenuButton<void>(
+            GlassMenuButton(
               tooltip: 'More',
-              color: AppColors.line,
-              icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.textMuted),
-              itemBuilder: (_) => [
-                PopupMenuItem(onTap: onOther, child: Text(otherLabel, style: AppText.body)),
-                PopupMenuItem(onTap: onEdit, child: Text('Edit', style: AppText.body)),
-                PopupMenuItem(onTap: onRemove, child: Text('Delete', style: AppText.body.copyWith(color: AppColors.dangerText))),
+              items: [
+                GlassMenuItem(otherLabel, Icons.open_in_new_rounded, onOther),
+                GlassMenuItem('Edit', Icons.edit_outlined, onEdit),
+                // Its marks and paper go too, so the dialog that says so stays.
+                GlassMenuItem('Delete', Icons.delete_outline_rounded, onRemove, danger: true, askAgain: false),
               ],
             ),
           ],
@@ -292,7 +292,7 @@ class _AssessmentDialogState extends State<_AssessmentDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.card,
+      backgroundColor: AppColors.sheet,
       title: Text(widget.assessment == null ? 'Add assessment' : 'Edit assessment', style: AppText.cardTitle),
       content: SingleChildScrollView(
         child: Column(
@@ -332,7 +332,7 @@ class _AssessmentDialogState extends State<_AssessmentDialog> {
                   ? null
                   : IconButton(
                       tooltip: 'Remove date',
-                      icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.textMuted),
+                      icon: Icon(Icons.close_rounded, size: 20, color: AppColors.textMuted),
                       onPressed: () => setState(() => _date = null),
                     ),
               onTap: _pickDate,

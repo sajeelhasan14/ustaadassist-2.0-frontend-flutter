@@ -102,7 +102,7 @@ class _CaptureListScreenState extends State<CaptureListScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
                 children: [
                   Text('Hold the sheet', style: AppText.heroTitle.copyWith(fontSize: 32)),
-                  Text('flat and steady.', style: AppText.heroTitle.copyWith(fontSize: 32, color: AppColors.green)),
+                  Text('flat and steady.', style: AppText.heroTitle.copyWith(fontSize: 32, color: AppColors.greenText)),
                   const SizedBox(height: 10),
                   Text('Photograph each page, or pick a file. Any layout works, and nothing is saved until you check it.',
                       style: AppText.body.copyWith(color: AppColors.textMuted)),
@@ -154,7 +154,7 @@ class _ReadingNote extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(AppRadius.card)),
+      decoration: AppGlass.box(AppRadius.card),
       child: Row(
         children: [
           const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3)),
@@ -177,13 +177,13 @@ class _PageRow extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.only(left: 16, right: 4),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(AppRadius.inner)),
+      decoration: AppGlass.box(AppRadius.inner),
       child: Row(
         children: [
-          const Icon(Icons.description_outlined, size: 20, color: AppColors.textMuted),
+          Icon(Icons.description_outlined, size: 20, color: AppColors.textMuted),
           const SizedBox(width: 12),
           Expanded(child: Text(name, style: AppText.rowTitle, overflow: TextOverflow.ellipsis)),
-          IconButton(tooltip: 'Remove $name', icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.textMuted), onPressed: onRemove),
+          IconButton(tooltip: 'Remove $name', icon: Icon(Icons.close_rounded, size: 20, color: AppColors.textMuted), onPressed: onRemove),
         ],
       ),
     );

@@ -26,7 +26,7 @@ class WelcomeScreen extends StatelessWidget {
                     width: 38,
                     height: 38,
                     decoration: BoxDecoration(color: AppColors.green, borderRadius: BorderRadius.circular(12)),
-                    child: const Icon(Icons.calendar_month_rounded, color: AppColors.onGreen, size: 22),
+                    child: Icon(Icons.calendar_month_rounded, color: AppColors.onGreen, size: 22),
                   ),
                   const SizedBox(width: 10),
                   Flexible(child: Text('UstaadAssist', style: AppText.cardTitle, overflow: TextOverflow.ellipsis)),
@@ -86,7 +86,7 @@ class _Feature extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(AppRadius.inner)),
+      decoration: AppGlass.box(AppRadius.inner),
       child: Row(
         children: [
           Icon(icon, color: AppColors.successText, size: 24),

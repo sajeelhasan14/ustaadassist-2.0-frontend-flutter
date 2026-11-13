@@ -13,7 +13,7 @@ void main() {
       tester.view.physicalSize = Size(width, height);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      await tester.pumpWidget(MaterialApp(theme: AppTheme.night, home: screen));
+      await tester.pumpWidget(MaterialApp(theme: AppTheme.current, home: screen));
       await tester.pump();
     }
 

@@ -8,10 +8,7 @@ import '../../core/theme/app_text.dart';
 void showMessage(BuildContext context, String text) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(SnackBar(
-      backgroundColor: AppColors.line,
-      content: Text(text, style: AppText.body.copyWith(color: AppColors.text)),
-    ));
+    ..showSnackBar(SnackBar(content: Text(text))); // look comes from the theme's snackBarTheme
 }
 
 /// Asks before anything that can't be undone. Returns true only if the teacher agrees.
@@ -19,7 +16,7 @@ Future<bool> confirmAction(BuildContext context, {required String title, require
   final agreed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      backgroundColor: AppColors.card,
+      backgroundColor: AppColors.sheet,
       title: Text(title, style: AppText.cardTitle),
       content: Text(message, style: AppText.body.copyWith(color: AppColors.textMuted)),
       actions: [
@@ -78,7 +75,7 @@ class _TextDialogState extends State<_TextDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.card,
+      backgroundColor: AppColors.sheet,
       title: Text(widget.title, style: AppText.cardTitle),
       content: TextField(
         controller: _text,

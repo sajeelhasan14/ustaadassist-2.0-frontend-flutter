@@ -5,10 +5,14 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_body.dart';
+import '../../../shared/widgets/celebrate.dart';
 import '../../../shared/widgets/hero_panel.dart';
+import '../../../shared/widgets/progress_shapes.dart';
 import '../../../shared/widgets/status_pill.dart';
 import '../../assistant/screens/assistant_sheet.dart';
+import '../../attendance/data/attendance_api.dart';
 import '../../attendance/screens/classes_screen.dart';
+import '../../attendance/screens/take_attendance_screen.dart';
 import '../../dashboard/screens/dashboard_screen.dart';
 import '../../marks/screens/assessments_screen.dart';
 import '../../materials/screens/materials_screen.dart';
@@ -80,7 +84,15 @@ class _CourseScreenState extends State<CourseScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_course.code),
+        // The course's own colour (design move 3), so it's recognisable without reading.
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 10, height: 10, decoration: BoxDecoration(color: AppColors.courseColour(_course.id).fill, shape: BoxShape.circle)),
+            const SizedBox(width: 8),
+            Text(_course.code),
+          ],
+        ),
         actions: [
           FutureBuilder<CourseOverview>(
             future: _data,
@@ -149,7 +161,10 @@ class CourseView extends StatelessWidget {
           ),
           const SizedBox(height: 14),
         ],
-        _PlanHero(plan: plan, onAddTopics: onAddTopics),
+        if (plan.topics.isEmpty)
+          _PlanHero(onAddTopics: onAddTopics)
+        else
+          _Bento(course: course, section: section, plan: plan, onOpen: onOpen),
         const SizedBox(height: 12),
         if (section.studentCount == 0) ...[
           _AddStudentsNudge(onTap: () => onOpen(StudentsScreen(section: section))),
@@ -178,7 +193,7 @@ class CourseView extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Container(
-            decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(AppRadius.inner)),
+            decoration: AppGlass.box(AppRadius.inner),
             child: Column(
               children: [
                 for (final (index, topic) in plan.topics.indexed) ...[
@@ -209,7 +224,7 @@ class _AddStudentsNudge extends StatelessWidget {
           Expanded(child: Text('No students yet. Photograph the class list.', style: AppText.rowTitle.copyWith(color: AppColors.onSetup))),
           const SizedBox(width: 10),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: AppColors.onSetup, foregroundColor: AppColors.text),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.onSetup, foregroundColor: AppColors.setup),
             onPressed: onTap,
             child: const Text('Add'),
           ),
@@ -257,7 +272,8 @@ class _Tool extends StatelessWidget {
     final (label, icon, screen) = tool;
     return Material(
       color: AppColors.card,
-      borderRadius: BorderRadius.circular(AppRadius.inner),
+      shape: AppGlass.shape(AppRadius.inner),
+      elevation: AppGlass.lift,
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.inner),
         onTap: () => onOpen(screen),
@@ -276,47 +292,250 @@ class _Tool extends StatelessWidget {
   }
 }
 
+/// A course with no topics yet: one job to do, so one violet panel.
 class _PlanHero extends StatelessWidget {
-  const _PlanHero({required this.plan, required this.onAddTopics});
+  const _PlanHero({required this.onAddTopics});
 
-  final SectionPlan plan;
   final VoidCallback onAddTopics;
 
   @override
   Widget build(BuildContext context) {
-    if (plan.topics.isEmpty) {
-      return HeroPanel(
-        label: 'NO PLAN YET',
-        tone: HeroTone.setup,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Add topics to build your plan.', style: AppText.cardTitle.copyWith(color: AppColors.onSetup)),
-            const SizedBox(height: 14),
-            FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: AppColors.onSetup, foregroundColor: AppColors.text),
-              onPressed: onAddTopics,
-              child: const Text('Add topics'),
-            ),
-          ],
-        ),
-      );
-    }
-    if (plan.classesShort > 0) {
-      return HeroPanel(
-        label: 'BEHIND PLAN',
-        tone: HeroTone.warning,
-        child: Text(
-          '${plan.classesShort} ${plan.classesShort == 1 ? 'class' : 'classes'} short',
-          style: AppText.heroTitle.copyWith(color: AppColors.onGreen, fontSize: 32),
-        ),
-      );
-    }
     return HeroPanel(
-      label: 'ON TRACK',
-      child: Text(
-        '${plan.classesAvailable} ${plan.classesAvailable == 1 ? 'class' : 'classes'} left',
-        style: AppText.heroTitle.copyWith(color: AppColors.onGreen, fontSize: 32),
+      label: 'NO PLAN YET',
+      tone: HeroTone.setup,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Add topics to build your plan.', style: AppText.cardTitle.copyWith(color: AppColors.onSetup)),
+          const SizedBox(height: 14),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.onSetup, foregroundColor: AppColors.setup),
+            onPressed: onAddTopics,
+            child: const Text('Add topics'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The course at a glance as tiles of different sizes (design move 2, "bento"):
+/// a wide status tile with the next class, two number tiles, and the syllabus
+/// as one block per topic. Everything comes from the plan this screen already
+/// loaded, so it costs no extra request.
+class _Bento extends StatelessWidget {
+  const _Bento({required this.course, required this.section, required this.plan, required this.onOpen});
+
+  final Course course;
+  final Section section;
+  final SectionPlan plan;
+  final ValueChanged<Widget> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    // Average attendance: everyone present in marked classes / everyone counted.
+    final held = [for (final item in plan.sessions) if (item.status == 'held' && item.present + item.absent > 0) item];
+    final present = held.fold(0, (sum, item) => sum + item.present);
+    final counted = held.fold(0, (sum, item) => sum + item.present + item.absent);
+    final average = counted == 0 ? null : present * 100 / counted;
+    final lastSeven = held.length > 7 ? held.sublist(held.length - 7) : held;
+    final topics = plan.topics.length;
+    final behind = plan.classesShort > 0;
+    final barColour = AppColors.courseColour(course.id).text; // charts use the course's colour (move 3)
+
+    return Column(
+      children: [
+        _StatusTile(course: course, section: section, plan: plan, onOpen: onOpen),
+        const SizedBox(height: 8),
+        // IntrinsicHeight makes the two tiles in this row the same height.
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: AppGlass.box(AppRadius.inner),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      average == null
+                          ? Text('–', style: AppText.bigNumber.copyWith(fontSize: 36))
+                          : CountUp(average, style: AppText.bigNumber.copyWith(fontSize: 36), suffix: '%', suffixStyle: AppText.rowTitle),
+                      Text(average == null ? 'no class marked yet' : 'average attendance', style: AppText.small.copyWith(color: AppColors.textMuted)),
+                      const Spacer(),
+                      const SizedBox(height: 8),
+                      // One bar per recent class: how full that class was.
+                      SizedBox(
+                        height: 24,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            for (final item in lastSeven) ...[
+                              Container(
+                                width: 8,
+                                height: 4 + 20 * item.present / (item.present + item.absent),
+                                decoration: BoxDecoration(color: barColour, borderRadius: BorderRadius.circular(2)),
+                              ),
+                              const SizedBox(width: 4),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: AppGlass.box(AppRadius.inner),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ProgressRing(
+                        value: topics == 0 ? 0 : plan.topicsDone / topics,
+                        size: 64,
+                        child: Text('${plan.topicsDone}', style: AppText.cardTitle),
+                      ),
+                      const SizedBox(height: 8),
+                      Text('of $topics topics taught', style: AppText.small.copyWith(color: AppColors.textMuted)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: AppGlass.box(AppRadius.inner),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(child: Text('Syllabus', style: AppText.rowTitle)),
+                  Text(
+                    '${plan.topicsDone} / $topics${behind ? ' · ${plan.classesShort} behind' : ''}',
+                    style: AppText.monoSmall.copyWith(color: behind ? AppColors.warningText : AppColors.textMuted),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // One block per topic: green taught, violet in progress, grey still to come.
+              SegmentBar(
+                colours: [
+                  for (final topic in plan.topics)
+                    switch (topic.status) {
+                      'done' => AppColors.greenText,
+                      'in_progress' => AppColors.warning,
+                      _ => AppColors.line,
+                    },
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The wide tile: on track (green) or behind (violet), the giant "classes left"
+/// number, a thin syllabus bar, and the next class with a go button.
+/// When every topic is taught, the "ALL DONE!" stamp appears (design move 7).
+class _StatusTile extends StatelessWidget {
+  const _StatusTile({required this.course, required this.section, required this.plan, required this.onOpen});
+
+  final Course course;
+  final Section section;
+  final SectionPlan plan;
+  final ValueChanged<Widget> onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final behind = plan.classesShort > 0;
+    final allDone = plan.topics.every((topic) => topic.status == 'done');
+    final fill = behind ? AppColors.warning : AppColors.green;
+    final ink = behind ? AppColors.onSetup : AppColors.onGreen; // dark text on both fills
+    final next = plan.sessions.where((item) => item.status == 'planned' && item.date.compareTo(plan.today) >= 0).firstOrNull;
+    final nextTopic = next?.topics.firstOrNull ?? plan.nextTopic;
+    final isToday = next != null && next.date == plan.today;
+    final words = behind
+        ? '${plan.classesShort} ${plan.classesShort == 1 ? 'class' : 'classes'} short'
+        : '${plan.classesAvailable} ${plan.classesAvailable == 1 ? 'class' : 'classes'} left';
+
+    // Today's class: straight into attendance. A later one: the list of classes.
+    void go() => onOpen(isToday && section.studentCount > 0
+        ? TakeAttendanceScreen(classRef: ClassRef(sectionId: section.id, date: next.date, startTime: next.startTime, title: course.title))
+        : ClassesScreen(course: course, section: section));
+
+    return Material(
+      color: fill,
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        onTap: next == null ? null : go,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(width: 6, height: 6, decoration: BoxDecoration(color: ink, shape: BoxShape.circle)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(behind ? 'BEHIND PLAN' : 'ON TRACK', style: AppText.label.copyWith(color: ink))),
+                  if (allDone) DoneStamp('ALL DONE!', colour: ink),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // The headline number (design move 1): giant, so it's read first.
+              Text(words, style: AppText.heroTitle.copyWith(color: ink, fontSize: 34, height: 1)),
+              const SizedBox(height: 12),
+              // How far through the syllabus, as a thin bar in the tile's own ink.
+              ClipRRect(
+                borderRadius: BorderRadius.circular(9),
+                child: LinearProgressIndicator(
+                  value: plan.topics.isEmpty ? 0 : plan.topicsDone / plan.topics.length,
+                  minHeight: 5,
+                  color: ink,
+                  backgroundColor: ink.withValues(alpha: 0.16),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      next == null
+                          ? 'No class planned ahead'
+                          : 'Next · ${isToday ? 'Today' : shortDate(next.date)} ${next.startTime}${nextTopic == null ? '' : ' · ${nextTopic.title}'}',
+                      style: AppText.rowTitle.copyWith(color: ink, fontSize: 13),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (next != null) ...[
+                    const SizedBox(width: 10),
+                    Tooltip(
+                      message: isToday ? 'Take attendance' : 'See classes',
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(color: ink, shape: BoxShape.circle),
+                        child: Icon(Icons.arrow_forward_rounded, color: fill, size: 20),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

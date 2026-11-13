@@ -30,7 +30,7 @@ class HeroPanel extends StatelessWidget {
       decoration: BoxDecoration(color: _background, borderRadius: BorderRadius.circular(AppRadius.card)),
       // Dark text everywhere inside: white on these colours is unreadable.
       child: DefaultTextStyle.merge(
-        style: const TextStyle(color: AppColors.onGreen),
+        style: TextStyle(color: AppColors.onGreen),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -40,7 +40,7 @@ class HeroPanel extends StatelessWidget {
                   Container(
                     width: 6,
                     height: 6,
-                    decoration: const BoxDecoration(color: AppColors.onGreen, shape: BoxShape.circle),
+                    decoration: BoxDecoration(color: AppColors.onGreen, shape: BoxShape.circle),
                   ),
                   const SizedBox(width: 8),
                   Flexible(child: Text(label!, style: AppText.label.copyWith(color: AppColors.onGreen))),

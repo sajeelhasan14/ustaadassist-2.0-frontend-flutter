@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
+import '../../../shared/widgets/glass_menu.dart';
 import '../../../shared/widgets/async_body.dart';
 import '../../../shared/widgets/card_list.dart';
 import '../../../shared/widgets/empty_note.dart';
@@ -74,7 +75,7 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
   Future<void> _chooseTopic(CourseFile file, List<TopicRef> topics) async {
     final chosen = await showModalBottomSheet<({String? id})>(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: AppColors.sheet,
       builder: (context) => SafeArea(
         child: ListView(
           shrinkWrap: true,
@@ -89,10 +90,8 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
     if (chosen != null) await _change(() => MaterialsApi.setTopic(file.id, chosen.id));
   }
 
-  Future<void> _remove(CourseFile file) async {
-    final agreed = await confirmAction(context, title: 'Delete ${file.name}?', message: 'The file is gone for good.', action: 'Delete');
-    if (agreed) await _change(() => MaterialsApi.remove(file.id));
-  }
+  /// The menu already asked "Tap again to delete", so no second question here.
+  Future<void> _remove(CourseFile file) => _change(() => MaterialsApi.remove(file.id));
 
   @override
   Widget build(BuildContext context) {
@@ -171,14 +170,12 @@ class _Row extends StatelessWidget {
                 ],
               ),
             ),
-            PopupMenuButton<void>(
+            GlassMenuButton(
               tooltip: 'File options',
-              color: AppColors.line,
-              icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.textMuted),
-              itemBuilder: (_) => [
-                PopupMenuItem(onTap: onRename, child: Text('Rename', style: AppText.body)),
-                if (onTopic != null) PopupMenuItem(onTap: onTopic, child: Text('Choose topic', style: AppText.body)),
-                PopupMenuItem(onTap: onRemove, child: Text('Delete', style: AppText.body.copyWith(color: AppColors.dangerText))),
+              items: [
+                GlassMenuItem('Rename', Icons.edit_outlined, onRename),
+                if (onTopic != null) GlassMenuItem('Choose topic', Icons.label_outline_rounded, onTopic!),
+                GlassMenuItem('Delete', Icons.delete_outline_rounded, onRemove, danger: true),
               ],
             ),
           ],

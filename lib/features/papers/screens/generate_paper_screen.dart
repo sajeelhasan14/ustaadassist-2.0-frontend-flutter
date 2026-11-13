@@ -117,7 +117,7 @@ class _GeneratePaperScreenState extends State<GeneratePaperScreen> {
         if (_busy)
           Container(
             padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(AppRadius.card)),
+            decoration: AppGlass.box(AppRadius.card),
             child: Row(
               children: [
                 const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 3)),

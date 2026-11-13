@@ -7,7 +7,7 @@ import 'package:ustaad_assist/features/courses/data/courses_api.dart';
 import 'package:ustaad_assist/features/home/data/home_api.dart';
 import 'package:ustaad_assist/features/home/screens/home_screen.dart';
 import 'package:ustaad_assist/features/marks/screens/assessments_screen.dart';
-import 'package:ustaad_assist/features/profile/screens/me_screen.dart';
+import 'package:ustaad_assist/features/courses/screens/course_settings_screen.dart';
 
 import 'support/fake_backend.dart';
 
@@ -275,34 +275,39 @@ void main() {
     });
   });
 
+  // Each course has its own line, changed in that course's settings (decision of 2026-11-09).
   group('attendance line', () {
-    testWidgets('shows the saved line and changes it', (tester) async {
-      final backend = FakeBackend();
-      backend.overrides['GET /me'] = {'teacher': {'fullName': 'T', 'minAttendance': 75}};
-      backend.overrides['PATCH /me'] = {'teacher': {'minAttendance': 80}};
-      await show(tester, const Scaffold(body: MeScreen()));
+    final course = Course.fromJson({'id': 'c1', 'semesterId': 'm1', 'code': 'CS-301', 'title': 'Database Systems', 'minAttendance': 75});
+    final section = Section.fromJson({'id': 's1', 'name': 'A', 'studentCount': 3});
+    final settings = CourseSettingsScreen(course: course, section: section, onCourseChanged: (_) {});
 
-      expect(find.text('75%'), findsOneWidget);
+    Future<void> changeTo(WidgetTester tester, String value) async {
+      await tester.ensureVisible(find.text('Attendance line'));
       await tester.tap(find.text('Attendance line'));
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), '80');
+      await tester.enterText(find.descendant(of: find.byType(AlertDialog), matching: find.byType(TextField)), value);
       await tester.tap(find.text('Save'));
       await tester.pumpAndSettle();
+    }
 
-      expect(backend.sent('PATCH', '/me').single.body, {'minAttendance': 80});
+    testWidgets('shows the course line and changes it for this course only', (tester) async {
+      final backend = FakeBackend();
+      backend.overrides['PATCH /courses/c1'] = {'course': {'id': 'c1', 'code': 'CS-301', 'title': 'Database Systems', 'minAttendance': 80}};
+      await show(tester, settings);
+
+      expect(find.text('75%'), findsOneWidget);
+      await changeTo(tester, '80');
+
+      expect(backend.sent('PATCH', '/courses/c1').single.body, {'minAttendance': 80});
       expect(find.text('80%'), findsOneWidget);
+      expect(backend.sent('PATCH', '/me'), isEmpty); // no longer one line for all courses
     });
 
     testWidgets('a refused value keeps the old line and says why', (tester) async {
       final backend = FakeBackend();
-      backend.overrides['GET /me'] = {'teacher': {'fullName': 'T', 'minAttendance': 75}};
-      backend.fail('PATCH /me', 400, 'bad', 'Must be 100 or less.');
-      await show(tester, const Scaffold(body: MeScreen()));
-      await tester.tap(find.text('Attendance line'));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), '150');
-      await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      backend.fail('PATCH /courses/c1', 400, 'bad', 'Must be 100 or less.');
+      await show(tester, settings);
+      await changeTo(tester, '150');
 
       expect(find.text('Must be 100 or less.'), findsOneWidget);
       expect(find.text('75%'), findsOneWidget);

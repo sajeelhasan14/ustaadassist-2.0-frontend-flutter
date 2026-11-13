@@ -20,10 +20,10 @@ class AssistantButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return IconButton(
       tooltip: 'Assistant',
-      icon: const Icon(Icons.auto_awesome_outlined, color: AppColors.text),
+      icon: Icon(Icons.auto_awesome_outlined, color: AppColors.text),
       onPressed: () => showModalBottomSheet<void>(
         context: context,
-        backgroundColor: AppColors.card,
+        backgroundColor: AppColors.sheet,
         isScrollControlled: true,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
         builder: (_) => AssistantSheet(courseId: courseId, sectionId: sectionId, onChanged: onChanged),
@@ -218,12 +218,12 @@ class _AssistantSheetState extends State<AssistantSheet> {
                     ),
                     IconButton(
                       tooltip: _listening ? 'Stop listening' : 'Speak',
-                      icon: Icon(_listening ? Icons.mic_rounded : Icons.mic_none_rounded, color: _listening ? AppColors.green : AppColors.textMuted),
+                      icon: Icon(_listening ? Icons.mic_rounded : Icons.mic_none_rounded, color: _listening ? AppColors.greenText : AppColors.textMuted),
                       onPressed: _toggleVoice,
                     ),
                     IconButton(
                       tooltip: 'Send',
-                      icon: const Icon(Icons.arrow_upward_rounded, color: AppColors.green),
+                      icon: Icon(Icons.arrow_upward_rounded, color: AppColors.greenText),
                       onPressed: _thinking ? null : () => _send(_text.text),
                     ),
                   ],
@@ -273,7 +273,7 @@ class _TeacherBubble extends StatelessWidget {
         alignment: Alignment.centerRight,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: AppColors.green,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(18),
@@ -332,8 +332,8 @@ class _StatTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colour = switch (stat.tone) {
-      'warning' => AppColors.warning,
-      'good' => AppColors.green,
+      'warning' => AppColors.warningText,
+      'good' => AppColors.greenText,
       _ => AppColors.text,
     };
     return Container(
@@ -405,7 +405,7 @@ class _ProposalCardState extends State<_ProposalCard> {
           if (_done)
             Row(
               children: [
-                const Icon(Icons.check_rounded, size: 18, color: AppColors.successText),
+                Icon(Icons.check_rounded, size: 18, color: AppColors.successText),
                 const SizedBox(width: 6),
                 Text('Done', style: AppText.rowTitle.copyWith(color: AppColors.successText)),
               ],
@@ -462,7 +462,7 @@ class _ThinkingState extends State<_Thinking> with SingleTickerProviderStateMixi
           animation: _dots,
           builder: (context, _) => Text(
             '.' * (1 + (_dots.value * 3).floor().clamp(0, 2)),
-            style: AppText.screenTitle.copyWith(color: AppColors.green),
+            style: AppText.screenTitle.copyWith(color: AppColors.greenText),
           ),
         ),
       ),

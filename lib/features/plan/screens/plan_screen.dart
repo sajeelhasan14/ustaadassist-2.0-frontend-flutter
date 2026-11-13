@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../core/dates.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
+import '../../../shared/widgets/glass_menu.dart';
 import '../../../shared/widgets/async_body.dart';
 import '../../../shared/widgets/card_list.dart';
 import '../../../shared/widgets/empty_note.dart';
@@ -81,15 +82,8 @@ class _PlanScreenState extends State<PlanScreen> {
     if (saved == true) _reload();
   }
 
-  Future<void> _removeTopic(PlanTopic topic) async {
-    final agreed = await confirmAction(
-      context,
-      title: 'Delete ${topic.title}?',
-      message: 'It leaves the outline of every section of this course.',
-      action: 'Delete',
-    );
-    if (agreed) await _change(() => PlanApi.removeTopic(topic.id));
-  }
+  /// The menu already asked "Tap again to delete", so no second question here.
+  Future<void> _removeTopic(PlanTopic topic) => _change(() => PlanApi.removeTopic(topic.id));
 
   Future<void> _move(SectionPlan plan, int index, int by) async {
     final ids = [for (final topic in plan.topics) topic.id];
@@ -193,7 +187,7 @@ class _Health extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = FilledButton.styleFrom(backgroundColor: AppColors.onGreen, foregroundColor: AppColors.text);
+    final dark = FilledButton.styleFrom(backgroundColor: AppColors.onGreen, foregroundColor: AppColors.green);
     if (plan.topics.isEmpty) {
       return HeroPanel(
         label: 'NO PLAN YET',
@@ -289,7 +283,7 @@ class _ClassRow extends StatelessWidget {
               onTap: onTake,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                decoration: const ShapeDecoration(color: AppColors.green, shape: StadiumBorder()),
+                decoration: ShapeDecoration(color: AppColors.green, shape: StadiumBorder()),
                 child: Text('Take', style: AppText.pill.copyWith(color: AppColors.onGreen)),
               ),
             )
@@ -335,14 +329,12 @@ class _TopicRow extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             StatusPill(label, tone: tone),
-            PopupMenuButton<void>(
+            GlassMenuButton(
               tooltip: 'Topic options',
-              color: AppColors.line,
-              icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.textMuted),
-              itemBuilder: (_) => [
-                if (onUp != null) PopupMenuItem(onTap: onUp, child: Text('Move up', style: AppText.body)),
-                if (onDown != null) PopupMenuItem(onTap: onDown, child: Text('Move down', style: AppText.body)),
-                PopupMenuItem(onTap: onRemove, child: Text('Delete', style: AppText.body.copyWith(color: AppColors.dangerText))),
+              items: [
+                if (onUp != null) GlassMenuItem('Move up', Icons.arrow_upward_rounded, onUp!),
+                if (onDown != null) GlassMenuItem('Move down', Icons.arrow_downward_rounded, onDown!),
+                GlassMenuItem('Delete', Icons.delete_outline_rounded, onRemove, danger: true),
               ],
             ),
           ],
@@ -400,7 +392,7 @@ class _TopicDialogState extends State<_TopicDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.card,
+      backgroundColor: AppColors.sheet,
       title: Text('Edit topic', style: AppText.cardTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,

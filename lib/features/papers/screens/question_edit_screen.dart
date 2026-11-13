@@ -212,7 +212,7 @@ class _QuestionEditScreenState extends State<QuestionEditScreen> {
                           ),
                           IconButton(
                             tooltip: 'Remove this part',
-                            icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.textMuted),
+                            icon: Icon(Icons.close_rounded, size: 18, color: AppColors.textMuted),
                             onPressed: () => setState(() => _parts.removeAt(index).dispose()),
                           ),
                         ],

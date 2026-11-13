@@ -6,13 +6,33 @@ class Course {
         code = json['code'] as String,
         title = json['title'] as String,
         semesterId = json['semesterId'] as String? ?? '',
-        totalMarks = json['totalMarks'] as num? ?? 100;
+        totalMarks = json['totalMarks'] as num? ?? 100,
+        minAttendance = json['minAttendance'] as num? ?? 75,
+        gradeScale = [for (final band in json['gradeScale'] as List? ?? const []) GradeBand.fromJson(band as Map<String, dynamic>)],
+        defaultGradeScale = json['defaultGradeScale'] as bool? ?? true;
 
   final String id;
   final String code;
   final String title;
   final String semesterId;
   final num totalMarks;
+  final num minAttendance; // below this % a student is short; each course has its own
+  final List<GradeBand> gradeScale; // highest first; below the last band = F
+  final bool defaultGradeScale; // true = the course never changed the default scale
+}
+
+/// One grade and the lowest percentage that earns it, e.g. A+ from 90.
+class GradeBand {
+  GradeBand(this.grade, this.min);
+
+  GradeBand.fromJson(Map<String, dynamic> json)
+      : grade = json['grade'] as String,
+        min = json['min'] as num;
+
+  final String grade;
+  final num min;
+
+  Map<String, dynamic> toJson() => {'grade': grade, 'min': min};
 }
 
 class Section {
@@ -134,8 +154,14 @@ abstract final class CoursesApi {
   static Future<SectionPlan> plan(String sectionId) async =>
       SectionPlan.fromJson(await api.get('/sections/$sectionId/sessions') as Map<String, dynamic>);
 
-  static Future<Course> update(String courseId, {String? title, String? code}) async {
-    final reply = await api.patch('/courses/$courseId', {'title': ?title, 'code': ?code});
+  static Future<Course> update(String courseId, {String? title, String? code, num? minAttendance}) async {
+    final reply = await api.patch('/courses/$courseId', {'title': ?title, 'code': ?code, 'minAttendance': ?minAttendance});
+    return Course.fromJson(reply['course'] as Map<String, dynamic>);
+  }
+
+  /// Saves the course's own grade scale. `null` goes back to the default scale.
+  static Future<Course> setGradeScale(String courseId, List<GradeBand>? bands) async {
+    final reply = await api.patch('/courses/$courseId', {'gradeScale': bands?.map((band) => band.toJson()).toList()});
     return Course.fromJson(reply['course'] as Map<String, dynamic>);
   }
 

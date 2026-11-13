@@ -128,7 +128,7 @@ class DashboardView extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.onSetup, foregroundColor: AppColors.text),
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.onSetup, foregroundColor: AppColors.setup),
                   onPressed: onNotMarked,
                   child: const Text('Mark'),
                 ),
@@ -194,7 +194,7 @@ class _Averages extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(AppRadius.inner)),
+      decoration: AppGlass.box(AppRadius.inner),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

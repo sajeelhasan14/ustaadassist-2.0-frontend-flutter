@@ -138,7 +138,7 @@ class HomeView extends StatelessWidget {
                 Text('${next.courseCode} · Section ${next.sectionName}', style: AppText.mono.copyWith(color: AppColors.onGreenSoft)),
                 const SizedBox(height: 14),
                 FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.onGreen, foregroundColor: AppColors.text),
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.onGreen, foregroundColor: AppColors.green),
                   onPressed: () => onOpen(_attendanceFor(next)),
                   child: const Text('Take attendance'),
                 ),
@@ -198,7 +198,7 @@ class _NothingLeft extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(AppRadius.card)),
+      decoration: AppGlass.box(AppRadius.card),
       child: Text(hadClasses ? 'All done for today.' : 'No classes today.', style: AppText.cardTitle),
     );
   }
@@ -246,7 +246,8 @@ class _ComingUpRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppRadius.inner),
+        shape: AppGlass.shape(AppRadius.inner),
+        elevation: AppGlass.lift,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.inner),
           onTap: onTap,
@@ -292,7 +293,8 @@ class _ClassRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppRadius.inner),
+        shape: AppGlass.shape(AppRadius.inner),
+        elevation: AppGlass.lift,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.inner),
           onTap: onTap,
@@ -338,7 +340,8 @@ class _CourseCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Material(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(AppRadius.card),
+        shape: AppGlass.shape(AppRadius.card),
+        elevation: AppGlass.lift,
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.card),
           onTap: onTap,
@@ -356,7 +359,7 @@ class _CourseCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+                Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
               ],
             ),
           ),

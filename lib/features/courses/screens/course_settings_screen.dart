@@ -2,6 +2,8 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/glass_menu.dart';
 import '../../../shared/widgets/async_body.dart';
 import '../../../shared/widgets/card_list.dart';
 import '../../../shared/widgets/prompts.dart';
@@ -9,6 +11,7 @@ import '../../setup/data/setup_api.dart';
 import '../../setup/screens/setup_holidays_screen.dart';
 import '../../setup/widgets/timetable_editor.dart';
 import '../data/courses_api.dart';
+import 'grade_scale_screen.dart';
 
 /// Everything about a course that rarely changes after setup.
 /// Pops 'deleted' if the course is gone, so the course screen can close too.
@@ -24,6 +27,8 @@ class CourseSettingsScreen extends StatefulWidget {
 }
 
 class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
+  // The course as last saved here, so the line and grade scale rows show new values at once.
+  late Course _course = widget.course;
   late final _title = TextEditingController(text: widget.course.title);
   late final _code = TextEditingController(text: widget.course.code);
   late Future<(List<Section>, List<ClassSlot>)> _data = _load();
@@ -55,11 +60,34 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
   Future<void> _saveDetails() async {
     try {
       final course = await CoursesApi.update(widget.course.id, title: _title.text.trim(), code: _code.text.trim());
+      setState(() => _course = course);
       widget.onCourseChanged(course);
       if (mounted) showMessage(context, 'Saved.');
     } catch (error) {
       if (mounted) showMessage(context, '$error');
     }
+  }
+
+  /// The attendance line of this course only: below it, a student is short.
+  Future<void> _changeLine() async {
+    final text = await askText(context, title: 'Attendance line', label: 'Percentage', initial: markText(_course.minAttendance), number: true);
+    final value = num.tryParse(text ?? '');
+    if (value == null) return;
+    try {
+      final course = await CoursesApi.update(_course.id, minAttendance: value);
+      setState(() => _course = course);
+      widget.onCourseChanged(course);
+    } catch (error) {
+      if (mounted) showMessage(context, '$error');
+    }
+  }
+
+  Future<void> _editGradeScale() async {
+    final course = await Navigator.of(context).push<Course>(MaterialPageRoute(builder: (_) => GradeScaleScreen(course: _course)));
+    if (course == null || !mounted) return;
+    setState(() => _course = course);
+    widget.onCourseChanged(course);
+    showMessage(context, 'Grade scale saved. Results use it now.');
   }
 
   Future<void> _addSection() async {
@@ -134,6 +162,38 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                 const SizedBox(height: 10),
                 FilledButton.tonal(onPressed: _saveDetails, child: const Text('Save details')),
                 const SizedBox(height: 24),
+                Text('RULES OF THIS COURSE', style: AppText.label),
+                const SizedBox(height: 10),
+                // Each course keeps its own rules (a teacher may teach at two universities).
+                Material(
+                  color: AppColors.card,
+                  shape: AppGlass.shape(AppRadius.inner),
+                  elevation: AppGlass.lift,
+                  clipBehavior: Clip.antiAlias,
+                  child: Column(
+                    children: [
+                      ListTile(
+                        title: Text('Attendance line', style: AppText.rowTitle),
+                        subtitle: Text('Students below this count as short', style: AppText.small.copyWith(color: AppColors.textMuted)),
+                        trailing: Text('${markText(_course.minAttendance)}%', style: AppText.mono),
+                        onTap: _changeLine,
+                      ),
+                      const Divider(),
+                      ListTile(
+                        title: Text('Grade scale', style: AppText.rowTitle),
+                        subtitle: Text(
+                          _course.gradeScale.isEmpty
+                              ? 'The default scale'
+                              : '${_course.defaultGradeScale ? 'Default · ' : ''}${_course.gradeScale.first.grade} from ${markText(_course.gradeScale.first.min)}%, pass from ${markText(_course.gradeScale.last.min)}%',
+                          style: AppText.small.copyWith(color: AppColors.textMuted),
+                        ),
+                        trailing: Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+                        onTap: _course.gradeScale.isEmpty ? null : _editGradeScale,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
                 Text('SECTIONS', style: AppText.label),
                 const SizedBox(height: 10),
                 CardList(
@@ -145,15 +205,12 @@ class _CourseSettingsScreenState extends State<CourseSettingsScreen> {
                           children: [
                             Expanded(child: Text('Section ${section.name}', style: AppText.rowTitle)),
                             Text('${section.studentCount} students', style: AppText.small.copyWith(color: AppColors.textMuted)),
-                            PopupMenuButton<void>(
+                            GlassMenuButton(
                               tooltip: 'Section options',
-                              color: AppColors.line,
-                              icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.textMuted),
-                              itemBuilder: (_) => [
-                                PopupMenuItem(onTap: () => _renameSection(section), child: Text('Rename', style: AppText.body)),
+                              items: [
+                                GlassMenuItem('Rename', Icons.edit_outlined, () => _renameSection(section)),
                                 // A course always keeps at least one section.
-                                if (sections.length > 1)
-                                  PopupMenuItem(onTap: () => _removeSection(section), child: Text('Delete', style: AppText.body.copyWith(color: AppColors.dangerText))),
+                                if (sections.length > 1) GlassMenuItem('Delete', Icons.delete_outline_rounded, () => _removeSection(section), danger: true, askAgain: false),
                               ],
                             ),
                           ],

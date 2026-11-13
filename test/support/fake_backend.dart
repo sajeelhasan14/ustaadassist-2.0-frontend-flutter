@@ -264,6 +264,6 @@ Future<void> show(WidgetTester tester, Widget screen, {double width = 390, doubl
   tester.view.physicalSize = Size(width, height);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(MaterialApp(theme: AppTheme.night, home: screen));
+  await tester.pumpWidget(MaterialApp(theme: AppTheme.current, home: screen));
   await tester.pumpAndSettle();
 }

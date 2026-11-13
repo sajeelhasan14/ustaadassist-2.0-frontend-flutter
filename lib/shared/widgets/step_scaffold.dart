@@ -48,7 +48,7 @@ class StepScaffold extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
                 children: [
                   Text(headingTop, style: AppText.heroTitle.copyWith(fontSize: 32)),
-                  Text(headingBottom, style: AppText.heroTitle.copyWith(fontSize: 32, color: AppColors.green)),
+                  Text(headingBottom, style: AppText.heroTitle.copyWith(fontSize: 32, color: AppColors.greenText)),
                   const SizedBox(height: 10),
                   Text(subtitle, style: AppText.body.copyWith(color: AppColors.textMuted)),
                   const SizedBox(height: 20),

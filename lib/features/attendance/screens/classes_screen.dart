@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../core/dates.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
+import '../../../shared/widgets/glass_menu.dart';
 import '../../../shared/widgets/async_body.dart';
 import '../../../shared/widgets/card_list.dart';
 import '../../../shared/widgets/empty_note.dart';
@@ -135,7 +136,7 @@ class ClassesView extends StatelessWidget {
                 ),
                 const SizedBox(width: 12),
                 FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.onGreen, foregroundColor: AppColors.text),
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.onGreen, foregroundColor: AppColors.green),
                   onPressed: () => onTake(next),
                   child: const Text('Take'),
                 ),
@@ -238,15 +239,12 @@ class _Menu extends StatelessWidget {
     // An off day isn't the teacher's to cancel, and a held class already happened.
     if (session.status == 'off_day' || session.status == 'held') return const SizedBox(width: 12);
     final cancelled = session.status == 'cancelled';
-    return PopupMenuButton<void>(
+    return GlassMenuButton(
       tooltip: 'More',
-      color: AppColors.line,
-      icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.textMuted),
-      itemBuilder: (_) => [
-        PopupMenuItem(
-          onTap: () => cancelled ? onRestore(session) : onCancel(session),
-          child: Text(cancelled ? 'Restore class' : 'Cancel class', style: AppText.body),
-        ),
+      items: [
+        cancelled
+            ? GlassMenuItem('Restore class', Icons.restore_rounded, () => onRestore(session))
+            : GlassMenuItem('Cancel class', Icons.event_busy_rounded, () => onCancel(session)),
       ],
     );
   }

@@ -96,13 +96,22 @@ abstract final class SetupApi {
         if (classesAvailable > 0) 'spreadOver': classesAvailable,
       });
 
-  static Future<List<OffDay>> offDays(String semesterId) async {
-    final reply = await api.get('/off-days?semesterId=$semesterId');
+  /// Reads a course's topics from a photo, scan or PDF of its outline, with AI.
+  /// Saves nothing: the topics go into the box for the teacher to check first.
+  static Future<List<String>> extractTopics(List<UploadFile> files) async {
+    final reply = await api.upload('/topics/extract', files, timeout: ApiClient.aiTimeout);
+    return [for (final title in reply['topics'] as List) title as String];
+  }
+
+  /// One course's holidays: each course has its own list. A new course starts with the
+  /// ones already marked in the teacher's other courses, plus public holidays.
+  static Future<List<OffDay>> offDays(String courseId) async {
+    final reply = await api.get('/off-days?courseId=$courseId');
     return [for (final item in reply['offDays'] as List) OffDay.fromJson(item as Map<String, dynamic>)];
   }
 
-  static Future<OffDay> addOffDay(String name, String date) async {
-    final reply = await api.post('/off-days', {'name': name, 'startDate': date});
+  static Future<OffDay> addOffDay(String courseId, String name, String date) async {
+    final reply = await api.post('/off-days', {'courseId': courseId, 'name': name, 'startDate': date});
     return OffDay.fromJson(reply['offDay'] as Map<String, dynamic>);
   }
 

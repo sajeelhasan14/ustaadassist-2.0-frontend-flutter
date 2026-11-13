@@ -8,6 +8,7 @@ import '../../../shared/widgets/empty_note.dart';
 import '../../../shared/widgets/prompts.dart';
 import '../../courses/data/courses_api.dart';
 import '../data/students_api.dart';
+import 'student_details_screen.dart';
 import 'capture_list_screen.dart';
 
 /// The class list of one section.
@@ -32,8 +33,14 @@ class _StudentsScreenState extends State<StudentsScreen> {
   }
 
   Future<void> _edit([Student? student]) async {
-    final saved = await showDialog<bool>(context: context, builder: (_) => _StudentDialog(sectionId: widget.section.id, student: student));
+    final saved = await showDialog<bool>(context: context, builder: (_) => StudentDialog(sectionId: widget.section.id, student: student));
     if (saved == true) _reload();
+  }
+
+  /// Opens the student's details, then reloads: their name may have been fixed there.
+  Future<void> _open(Student student) async {
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => StudentDetailsScreen(section: widget.section, student: student)));
+    if (mounted) _reload();
   }
 
   Future<void> _remove(Student student) async {
@@ -100,7 +107,7 @@ class _StudentsScreenState extends State<StudentsScreen> {
                 if (shown.isEmpty)
                   Text('Nobody matches.', style: AppText.body.copyWith(color: AppColors.textMuted))
                 else
-                  CardList(children: [for (final student in shown) _Row(student: student, onEdit: () => _edit(student), onRemove: () => _remove(student))]),
+                  CardList(children: [for (final student in shown) _Row(student: student, onOpen: () => _open(student), onRemove: () => _remove(student))]),
               ],
             );
           },
@@ -111,16 +118,16 @@ class _StudentsScreenState extends State<StudentsScreen> {
 }
 
 class _Row extends StatelessWidget {
-  const _Row({required this.student, required this.onEdit, required this.onRemove});
+  const _Row({required this.student, required this.onOpen, required this.onRemove});
 
   final Student student;
-  final VoidCallback onEdit;
+  final VoidCallback onOpen; // the student's details
   final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onEdit,
+      onTap: onOpen,
       child: Padding(
         padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8, right: 4),
         child: Row(
@@ -137,7 +144,7 @@ class _Row extends StatelessWidget {
             ),
             IconButton(
               tooltip: 'Remove ${student.fullName}',
-              icon: const Icon(Icons.person_remove_outlined, size: 20, color: AppColors.textMuted),
+              icon: Icon(Icons.person_remove_outlined, size: 20, color: AppColors.textMuted),
               onPressed: onRemove,
             ),
           ],
@@ -148,17 +155,17 @@ class _Row extends StatelessWidget {
 }
 
 /// Adds one forgotten student, or fixes a student's details. Pops true once saved.
-class _StudentDialog extends StatefulWidget {
-  const _StudentDialog({required this.sectionId, this.student});
+class StudentDialog extends StatefulWidget {
+  const StudentDialog({super.key, required this.sectionId, this.student});
 
   final String sectionId;
   final Student? student;
 
   @override
-  State<_StudentDialog> createState() => _StudentDialogState();
+  State<StudentDialog> createState() => StudentDialogState();
 }
 
-class _StudentDialogState extends State<_StudentDialog> {
+class StudentDialogState extends State<StudentDialog> {
   late final _roll = TextEditingController(text: widget.student?.rollNumber);
   late final _name = TextEditingController(text: widget.student?.fullName);
   late final _father = TextEditingController(text: widget.student?.fatherName);
@@ -206,7 +213,7 @@ class _StudentDialogState extends State<_StudentDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.card,
+      backgroundColor: AppColors.sheet,
       title: Text(widget.student == null ? 'Add a student' : 'Edit student', style: AppText.cardTitle),
       content: SingleChildScrollView(
         child: Column(

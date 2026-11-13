@@ -31,13 +31,13 @@ class _SetupHolidaysScreenState extends State<SetupHolidaysScreen> {
   String? _error;
 
   Future<List<OffDay>> _load() async {
-    final days = await SetupApi.offDays(widget.progress.semesterId);
+    final days = await SetupApi.offDays(widget.progress.course.id);
     _days = days;
     return days;
   }
 
   Future<void> _addHoliday() async {
-    final added = await showDialog<OffDay>(context: context, builder: (_) => const _AddHolidayDialog());
+    final added = await showDialog<OffDay>(context: context, builder: (_) => _AddHolidayDialog(courseId: widget.progress.course.id));
     if (added == null) return;
     setState(() {
       _days = [..._days, added]..sort((a, b) => a.startDate.compareTo(b.startDate));
@@ -48,7 +48,7 @@ class _SetupHolidaysScreenState extends State<SetupHolidaysScreen> {
   Future<void> _shift(OffDay day) async {
     final days = await showModalBottomSheet<int>(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: AppColors.sheet,
       builder: (context) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -105,7 +105,7 @@ class _SetupHolidaysScreenState extends State<SetupHolidaysScreen> {
       step: widget.standalone ? 'Holidays' : '3 / 3',
       headingTop: 'Any of these',
       headingBottom: 'not apply?',
-      subtitle: 'Public holidays are already in, and they apply to all your classes. Untick any your university still teaches on.',
+      subtitle: 'Public holidays and the ones you marked in your other courses are already in. They apply to this course only: untick any day this university still teaches on.',
       error: _error,
       buttonLabel: _busy ? 'Saving…' : (widget.standalone ? 'Save holidays' : 'Generate my plan'),
       onPressed: _busy ? null : _finish,
@@ -123,7 +123,7 @@ class _SetupHolidaysScreenState extends State<SetupHolidaysScreen> {
               return Text('No public holidays fall in this semester.', style: AppText.body.copyWith(color: AppColors.textMuted));
             }
             return Container(
-              decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(AppRadius.inner)),
+              decoration: AppGlass.box(AppRadius.inner),
               child: Column(
                 children: [
                   for (final (index, day) in _days.indexed) ...[
@@ -190,7 +190,9 @@ class _HolidayRow extends StatelessWidget {
 }
 
 class _AddHolidayDialog extends StatefulWidget {
-  const _AddHolidayDialog();
+  const _AddHolidayDialog({required this.courseId});
+
+  final String courseId; // the holiday is added to this course only
 
   @override
   State<_AddHolidayDialog> createState() => _AddHolidayDialogState();
@@ -220,7 +222,7 @@ class _AddHolidayDialogState extends State<_AddHolidayDialog> {
     }
     setState(() => _busy = true);
     try {
-      final day = await SetupApi.addOffDay(_name.text.trim(), _date!);
+      final day = await SetupApi.addOffDay(widget.courseId, _name.text.trim(), _date!);
       if (mounted) Navigator.of(context).pop(day);
     } catch (error) {
       if (mounted) {
@@ -235,7 +237,7 @@ class _AddHolidayDialogState extends State<_AddHolidayDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.card,
+      backgroundColor: AppColors.sheet,
       title: Text('Add a holiday', style: AppText.cardTitle),
       content: Column(
         mainAxisSize: MainAxisSize.min,

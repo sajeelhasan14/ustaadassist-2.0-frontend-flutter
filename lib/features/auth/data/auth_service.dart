@@ -30,4 +30,32 @@ abstract final class AuthService {
   }
 
   static Future<void> signOut() => _auth.signOut();
+
+  /// Forgot password, step 1: Supabase emails a 6-digit code. We use the code, not the
+  /// email's link, because a link would need the phone to open the app from a web
+  /// address (deep links). Returns null if it worked, otherwise a message to show.
+  static Future<String?> sendResetCode(String email) async {
+    try {
+      await _auth.resetPasswordForEmail(email);
+      return null;
+    } on AuthException catch (error) {
+      return error.message;
+    } catch (_) {
+      return "Can't reach the server. Check your connection and try again.";
+    }
+  }
+
+  /// Forgot password, step 2: the code proves it's their email, which also signs them in;
+  /// then the new password is saved. Returns null if it worked, otherwise a message.
+  static Future<String?> resetPassword(String email, String code, String newPassword) async {
+    try {
+      await _auth.verifyOTP(type: OtpType.recovery, email: email, token: code);
+      await _auth.updateUser(UserAttributes(password: newPassword));
+      return null;
+    } on AuthException catch (error) {
+      return error.message;
+    } catch (_) {
+      return "Can't reach the server. Check your connection and try again.";
+    }
+  }
 }

@@ -13,7 +13,8 @@ class CardList extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.card,
-      borderRadius: BorderRadius.circular(AppRadius.inner),
+      shape: AppGlass.shape(AppRadius.inner),
+      elevation: AppGlass.lift,
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

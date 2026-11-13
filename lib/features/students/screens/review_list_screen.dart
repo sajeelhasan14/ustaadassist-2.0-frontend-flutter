@@ -186,7 +186,7 @@ class _ReviewRowState extends State<_ReviewRow> {
                   onChanged: (_) => _edited(),
                 ),
               ),
-              IconButton(tooltip: 'Remove this row', icon: const Icon(Icons.close_rounded, color: AppColors.textMuted), onPressed: widget.onRemove),
+              IconButton(tooltip: 'Remove this row', icon: Icon(Icons.close_rounded, color: AppColors.textMuted), onPressed: widget.onRemove),
             ],
           ),
           const SizedBox(height: 8),
@@ -230,7 +230,7 @@ class _ReviewRowState extends State<_ReviewRow> {
               ],
             ),
           ),
-          trailing ?? IconButton(tooltip: 'Remove this row', icon: const Icon(Icons.close_rounded, size: 20, color: AppColors.textMuted), onPressed: widget.onRemove),
+          trailing ?? IconButton(tooltip: 'Remove this row', icon: Icon(Icons.close_rounded, size: 20, color: AppColors.textMuted), onPressed: widget.onRemove),
         ],
       ),
     );

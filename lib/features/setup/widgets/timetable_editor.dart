@@ -86,7 +86,8 @@ class ValueBox extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.card,
-      borderRadius: BorderRadius.circular(AppRadius.field),
+      shape: AppGlass.shape(AppRadius.field),
+      elevation: AppGlass.lift,
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.field),
         onTap: onTap,

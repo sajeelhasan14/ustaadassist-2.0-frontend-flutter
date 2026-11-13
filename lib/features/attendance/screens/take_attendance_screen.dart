@@ -6,6 +6,7 @@ import '../../../core/theme/app_text.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_body.dart';
 import '../../../shared/widgets/card_list.dart';
+import '../../../shared/widgets/celebrate.dart';
 import '../../../shared/widgets/empty_note.dart';
 import '../../../shared/widgets/hero_panel.dart';
 import '../../../shared/widgets/prompts.dart';
@@ -63,7 +64,31 @@ class _TakeAttendanceScreenState extends State<TakeAttendanceScreen> {
     try {
       await AttendanceApi.save(sheet.sessionId, absent: _absent.toList(), topicIds: [for (final topic in _topics) topic.id]);
       await _warnIfShort();
-      if (mounted) Navigator.of(context).pop(true);
+      if (!mounted) return;
+      // Reward moment: confetti and "Saved". Undo puts back what was saved before,
+      // so it's offered only when this class had been marked already. A first save
+      // can't be un-marked, because the server has no "not marked" to go back to.
+      final before = (
+        absent: [for (final student in sheet.students) if (!student.present) student.id],
+        topicIds: [for (final topic in sheet.topics) topic.id],
+      );
+      final messenger = ScaffoldMessenger.of(context); // still here after this screen closes
+      final present = sheet.students.length - _absent.length;
+      celebrate(
+        context,
+        message: 'Attendance saved · $present present',
+        onUndo: !sheet.marked
+            ? null
+            : () async {
+                try {
+                  await AttendanceApi.save(sheet.sessionId, absent: before.absent, topicIds: before.topicIds);
+                  messenger.showSnackBar(const SnackBar(content: Text('Put back as it was. Pull down to refresh.')));
+                } catch (error) {
+                  messenger.showSnackBar(SnackBar(content: Text('$error')));
+                }
+              },
+      );
+      Navigator.of(context).pop(true);
     } catch (error) {
       if (mounted) {
         setState(() {
@@ -77,7 +102,7 @@ class _TakeAttendanceScreenState extends State<TakeAttendanceScreen> {
   Future<void> _changeTopics(AttendanceSheet sheet) async {
     final chosen = await showModalBottomSheet<List<TopicRef>>(
       context: context,
-      backgroundColor: AppColors.card,
+      backgroundColor: AppColors.sheet,
       isScrollControlled: true,
       builder: (_) => _TopicPicker(outline: sheet.outline, selected: _topics),
     );
@@ -193,7 +218,7 @@ class _ShortWarning extends StatelessWidget {
             Align(
               alignment: Alignment.centerRight,
               child: FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: AppColors.onGreen, foregroundColor: AppColors.text),
+                style: FilledButton.styleFrom(backgroundColor: AppColors.onGreen, foregroundColor: AppColors.green),
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('OK'),
               ),
@@ -258,7 +283,8 @@ class _TaughtRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.card,
-      borderRadius: BorderRadius.circular(AppRadius.inner),
+      shape: AppGlass.shape(AppRadius.inner),
+      elevation: AppGlass.lift,
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.inner),
         onTap: onTap,

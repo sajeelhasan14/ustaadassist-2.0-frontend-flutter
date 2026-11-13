@@ -1,4 +1,8 @@
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:material_ui/material_ui.dart';
+
+import '../../../core/api/api_client.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
@@ -23,6 +27,7 @@ class _SetupTopicsScreenState extends State<SetupTopicsScreen> {
   final _outline = TextEditingController();
   int? _classes;
   bool _busy = false;
+  bool _reading = false; // the AI is reading a photo or PDF of the outline
   String? _error;
 
   @override
@@ -45,6 +50,36 @@ class _SetupTopicsScreenState extends State<SetupTopicsScreen> {
   void dispose() {
     _outline.dispose();
     super.dispose();
+  }
+
+  /// Topic import: a photo of the printed outline, or a PDF or photo file. The topics
+  /// found are added to the box (below anything already typed), so nothing is saved
+  /// until the teacher has looked and pressed the main button.
+  Future<void> _readOutline({required bool camera}) async {
+    final files = <UploadFile>[];
+    if (camera) {
+      // A smaller photo uploads faster, and printed text stays perfectly readable.
+      final photo = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 80, maxWidth: 2200);
+      if (photo != null) files.add(UploadFile(field: 'files', name: 'outline.jpg', bytes: await photo.readAsBytes()));
+    } else {
+      final picked = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: const ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'txt']);
+      for (final file in picked) {
+        files.add(UploadFile(field: 'files', name: file.name, bytes: await file.readAsBytes()));
+      }
+    }
+    if (files.isEmpty || !mounted) return;
+    setState(() {
+      _reading = true;
+      _error = null;
+    });
+    try {
+      final topics = await SetupApi.extractTopics(files);
+      final typed = _outline.text.trimRight();
+      _outline.text = [if (typed.isNotEmpty) typed, ...topics].join('\n');
+    } catch (error) {
+      _error = '$error';
+    }
+    if (mounted) setState(() => _reading = false);
   }
 
   /// Pasted outlines often carry numbers or bullets: "1. Intro", "- Intro". We keep only the topic.
@@ -93,11 +128,42 @@ class _SetupTopicsScreenState extends State<SetupTopicsScreen> {
       step: widget.standalone ? 'Topics' : '2 / 3',
       headingTop: 'What are you',
       headingBottom: 'teaching?',
-      subtitle: 'One topic per line. Paste it straight from your outline, and the classes are shared out for you.',
+      subtitle: 'One topic per line. Paste your outline, or photograph it, and the classes are shared out for you.',
       error: _error,
       buttonLabel: _buttonLabel,
-      onPressed: _busy || (widget.standalone && _topics.isEmpty) ? null : _next,
+      onPressed: _busy || _reading || (widget.standalone && _topics.isEmpty) ? null : _next,
       children: [
+        // Topic import: the outline is often printed, so reading it beats typing it.
+        Row(
+          children: [
+            Expanded(
+              child: FilledButton.tonalIcon(
+                onPressed: _reading ? null : () => _readOutline(camera: true),
+                icon: const Icon(Icons.photo_camera_outlined),
+                label: const Text('Photo of outline'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _reading ? null : () => _readOutline(camera: false),
+                icon: const Icon(Icons.upload_file_rounded),
+                label: const Text('PDF or photo'),
+              ),
+            ),
+          ],
+        ),
+        if (_reading) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.5)),
+              const SizedBox(width: 10),
+              Expanded(child: Text('Reading your outline…', style: AppText.body.copyWith(color: AppColors.textMuted))),
+            ],
+          ),
+        ],
+        const SizedBox(height: 12),
         TextField(
           controller: _outline,
           minLines: 9,

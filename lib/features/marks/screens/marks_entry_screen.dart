@@ -4,6 +4,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../shared/widgets/async_body.dart';
+import '../../../shared/widgets/celebrate.dart';
 import '../../../shared/widgets/empty_note.dart';
 import '../../../shared/widgets/prompts.dart';
 import '../../../shared/widgets/status_pill.dart';
@@ -105,12 +106,14 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
     if (_index < sheet.students.length - 1) {
       _show(sheet, _index + 1);
     } else {
-      _leave(sheet);
+      _leave(sheet, finished: true);
     }
   }
 
   /// Leaving waits for the last marks. If they can't be saved, the teacher decides.
-  Future<void> _leave(MarksSheet? sheet) async {
+  /// [finished] = the teacher went through to the last student, which earns the
+  /// reward moment once every mark has reached the server.
+  Future<void> _leave(MarksSheet? sheet, {bool finished = false}) async {
     if (sheet != null) {
       await _flush(sheet);
       if (!mounted) return;
@@ -122,6 +125,9 @@ class _MarksEntryScreenState extends State<MarksEntryScreen> {
           action: 'Leave anyway',
         );
         if (!leave || !mounted) return;
+      } else if (finished) {
+        // No Undo here: every mark can simply be changed by opening the sheet again.
+        celebrate(context, message: 'Marks saved · ${sheet.students.length} students');
       }
     }
     Navigator.of(context).pop(true);
@@ -328,7 +334,8 @@ class _Key extends StatelessWidget {
         padding: const EdgeInsets.all(3),
         child: Material(
           color: AppColors.card,
-          borderRadius: BorderRadius.circular(AppRadius.inner),
+          shape: AppGlass.shape(AppRadius.inner),
+          elevation: AppGlass.lift,
           child: InkWell(
             borderRadius: BorderRadius.circular(AppRadius.inner),
             onTap: onTap,

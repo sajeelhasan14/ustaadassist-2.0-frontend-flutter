@@ -4,6 +4,7 @@ import '../../../core/save_file.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../shared/widgets/glass_menu.dart';
 import '../../../shared/widgets/async_body.dart';
 import '../../../shared/widgets/hero_panel.dart';
 import '../../../shared/widgets/prompts.dart';
@@ -69,10 +70,8 @@ class _PaperScreenState extends State<PaperScreen> {
     if (mounted) setState(() => _rewriting.remove(question.id));
   }
 
-  Future<void> _removeQuestion(Question question) async {
-    final agreed = await confirmAction(context, title: 'Delete this question?', message: question.text, action: 'Delete');
-    if (agreed) await _change(() => PapersApi.removeQuestion(question.id));
-  }
+  /// The menu already asked "Tap again to delete", so no second question here.
+  Future<void> _removeQuestion(Question question) => _change(() => PapersApi.removeQuestion(question.id));
 
   /// Swaps a question with its neighbour. The backend stores the order of the whole paper.
   Future<void> _move(Paper paper, PaperSection section, int index, int by) async {
@@ -137,17 +136,16 @@ class _PaperScreenState extends State<PaperScreen> {
             title: Text(paper?.name ?? 'Question paper'),
             actions: [
               if (paper != null)
-                PopupMenuButton<void>(
+                GlassMenuButton(
                   tooltip: 'Paper options',
-                  color: AppColors.line,
-                  itemBuilder: (_) => [
-                    PopupMenuItem(onTap: () => _download(paper), child: Text('Download PDF', style: AppText.body)),
-                    PopupMenuItem(onTap: () => _generate(paper), child: Text('Generate more', style: AppText.body)),
-                    PopupMenuItem(onTap: () => _editQuestion(paper), child: Text('Add my own question', style: AppText.body)),
-                    PopupMenuItem(onTap: _editSection, child: Text('Add a section', style: AppText.body)),
-                    if (paper.draftCount > 0) PopupMenuItem(onTap: () => _clear(draftsOnly: true), child: Text('Throw away drafts', style: AppText.body)),
-                    if (!paper.isEmpty)
-                      PopupMenuItem(onTap: () => _clear(draftsOnly: false), child: Text('Clear the paper', style: AppText.body.copyWith(color: AppColors.dangerText))),
+                  items: [
+                    GlassMenuItem('Download PDF', Icons.download_rounded, () => _download(paper)),
+                    GlassMenuItem('Generate more', Icons.auto_awesome_outlined, () => _generate(paper)),
+                    GlassMenuItem('Add my own question', Icons.add_rounded, () => _editQuestion(paper)),
+                    GlassMenuItem('Add a section', Icons.view_agenda_outlined, _editSection),
+                    if (paper.draftCount > 0) GlassMenuItem('Throw away drafts', Icons.layers_clear_outlined, () => _clear(draftsOnly: true)),
+                    // Clearing loses every question, so its dialog stays.
+                    if (!paper.isEmpty) GlassMenuItem('Clear the paper', Icons.delete_sweep_outlined, () => _clear(draftsOnly: false), danger: true, askAgain: false),
                   ],
                 ),
             ],
@@ -176,7 +174,7 @@ class _PaperScreenState extends State<PaperScreen> {
               Text('Let AI write the first draft.', style: AppText.cardTitle.copyWith(color: AppColors.onGreen)),
               const SizedBox(height: 14),
               FilledButton(
-                style: FilledButton.styleFrom(backgroundColor: AppColors.onGreen, foregroundColor: AppColors.text),
+                style: FilledButton.styleFrom(backgroundColor: AppColors.onGreen, foregroundColor: AppColors.green),
                 onPressed: () => _generate(paper),
                 child: const Text('Generate paper'),
               ),
@@ -207,13 +205,13 @@ class _PaperScreenState extends State<PaperScreen> {
               ),
               if (paper.draftCount > 0)
                 FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.onSetup, foregroundColor: AppColors.text),
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.onSetup, foregroundColor: AppColors.setup),
                   onPressed: () => _change(() => PapersApi.approveAll(widget.assessmentId)),
                   child: const Text('Approve all'),
                 )
               else
                 FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: AppColors.onGreen, foregroundColor: AppColors.text),
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.onGreen, foregroundColor: AppColors.green),
                   onPressed: () => _download(paper),
                   child: const Text('PDF'),
                 ),
@@ -273,13 +271,13 @@ class _SectionHeader extends StatelessWidget {
             ],
           ),
         ),
-        PopupMenuButton<void>(
+        GlassMenuButton(
           tooltip: 'Section options',
-          color: AppColors.line,
-          icon: const Icon(Icons.more_horiz_rounded, size: 20, color: AppColors.textMuted),
-          itemBuilder: (_) => [
-            PopupMenuItem(onTap: onEdit, child: Text('Edit section', style: AppText.body)),
-            PopupMenuItem(onTap: onRemove, child: Text('Delete section', style: AppText.body.copyWith(color: AppColors.dangerText))),
+          icon: Icons.more_horiz_rounded,
+          items: [
+            GlassMenuItem('Edit section', Icons.edit_outlined, onEdit),
+            // Its questions go too, so the dialog that says so stays.
+            GlassMenuItem('Delete section', Icons.delete_outline_rounded, onRemove, danger: true, askAgain: false),
           ],
         ),
       ],
@@ -316,7 +314,7 @@ class _QuestionCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(top: 8),
       padding: const EdgeInsets.fromLTRB(16, 12, 6, 8),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(AppRadius.inner)),
+      decoration: AppGlass.box(AppRadius.inner),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -325,16 +323,14 @@ class _QuestionCard extends StatelessWidget {
               Text('Q$number', style: AppText.mono.copyWith(color: AppColors.textMuted)),
               const SizedBox(width: 8),
               Expanded(child: Text('${markText(question.marks)} marks · ${question.type} · ${question.difficulty}', style: muted, overflow: TextOverflow.ellipsis)),
-              PopupMenuButton<void>(
+              GlassMenuButton(
                 tooltip: 'Question options',
-                color: AppColors.line,
-                icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.textMuted),
-                itemBuilder: (_) => [
-                  PopupMenuItem(onTap: onEdit, child: Text('Edit', style: AppText.body)),
-                  PopupMenuItem(onTap: onRewrite, child: Text('Rewrite with AI', style: AppText.body)),
-                  if (onUp != null) PopupMenuItem(onTap: onUp, child: Text('Move up', style: AppText.body)),
-                  if (onDown != null) PopupMenuItem(onTap: onDown, child: Text('Move down', style: AppText.body)),
-                  PopupMenuItem(onTap: onRemove, child: Text('Delete', style: AppText.body.copyWith(color: AppColors.dangerText))),
+                items: [
+                  GlassMenuItem('Edit', Icons.edit_outlined, onEdit),
+                  GlassMenuItem('Rewrite with AI', Icons.auto_awesome_outlined, onRewrite),
+                  if (onUp != null) GlassMenuItem('Move up', Icons.arrow_upward_rounded, onUp!),
+                  if (onDown != null) GlassMenuItem('Move down', Icons.arrow_downward_rounded, onDown!),
+                  GlassMenuItem('Delete', Icons.delete_outline_rounded, onRemove, danger: true),
                 ],
               ),
             ],
@@ -434,7 +430,7 @@ class _SectionDialogState extends State<_SectionDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.card,
+      backgroundColor: AppColors.sheet,
       title: Text(widget.section == null ? 'Add a section' : 'Edit section', style: AppText.cardTitle),
       content: SingleChildScrollView(
         child: Column(

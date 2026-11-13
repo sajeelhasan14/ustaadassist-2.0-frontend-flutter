@@ -3,6 +3,7 @@ import 'package:material_ui/material_ui.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../data/auth_service.dart';
+import 'forgot_password_screen.dart';
 import 'sign_up_screen.dart';
 
 /// Design: Night screen 24. On success nothing is pushed: the app shell hears
@@ -59,7 +60,7 @@ class _SignInScreenState extends State<SignInScreen> {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
           children: [
             Text('Welcome', style: AppText.heroTitle),
-            Text('back.', style: AppText.heroTitle.copyWith(color: AppColors.green)),
+            Text('back.', style: AppText.heroTitle.copyWith(color: AppColors.greenText)),
             const SizedBox(height: 12),
             Text('Sign in with your email.', style: AppText.body.copyWith(color: AppColors.textMuted)),
             const SizedBox(height: 28),
@@ -87,11 +88,19 @@ class _SignInScreenState extends State<SignInScreen> {
                 ),
               ),
             ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                // Carries the email typed so far, so it isn't typed twice.
+                onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ForgotPasswordScreen(email: _email.text.trim()))),
+                child: const Text('Forgot password?'),
+              ),
+            ),
             if (_error != null) ...[
-              const SizedBox(height: 14),
+              const SizedBox(height: 4),
               Text(_error!, style: AppText.small.copyWith(color: AppColors.dangerText)),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             FilledButton(onPressed: _busy ? null : _submit, child: Text(_busy ? 'Signing in…' : 'Sign in')),
             const SizedBox(height: 8),
             TextButton(

@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'core/config.dart';
+import 'core/theme/appearance.dart';
 
 /// Starts the app. Login has to be ready before the first screen, so it can
 /// tell whether the teacher is already signed in.
@@ -12,6 +13,7 @@ Future<void> main() async {
     runApp(const _MissingSettings());
     return;
   }
+  await Appearance.load(); // light or dark must be known before the first screen
   await Supabase.initialize(url: Config.supabaseUrl, publishableKey: Config.supabaseAnonKey);
   runApp(const UstaadAssistApp());
 }

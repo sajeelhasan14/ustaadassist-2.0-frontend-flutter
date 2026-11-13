@@ -4,6 +4,7 @@ import '../../../core/api/api_client.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/appearance.dart';
 import '../../../shared/widgets/async_body.dart';
 import '../../courses/data/courses_api.dart';
 import '../../courses/screens/course_screen.dart';
@@ -32,10 +33,11 @@ class _MyCoursesScreenState extends State<MyCoursesScreen> {
   /// The two requests don't depend on each other, so they run together.
   static Future<MyCoursesData> _load() async {
     final (me, list) = await (api.get('/me'), api.get('/courses')).wait;
-    return MyCoursesData(
-      teacherName: me['teacher']['fullName'] as String,
-      courses: [for (final item in list['courses'] as List) Course.fromJson(item as Map<String, dynamic>)],
-    );
+    final courses = [for (final item in list['courses'] as List) Course.fromJson(item as Map<String, dynamic>)];
+    // A course seen for the first time gets its own colour, remembered on this phone.
+    // Oldest first, so a new course never takes a colour away from an old one.
+    await Appearance.giveCourseColours([for (final course in courses.reversed) course.id]);
+    return MyCoursesData(teacherName: me['teacher']['fullName'] as String, courses: courses);
   }
 
   void _reload() => setState(() { _data = _load(); });
@@ -104,7 +106,7 @@ class MyCoursesView extends StatelessWidget {
         Text.rich(
           TextSpan(children: [
             const TextSpan(text: 'Your\n'),
-            TextSpan(text: 'courses.', style: TextStyle(color: AppColors.green)),
+            TextSpan(text: 'courses.', style: TextStyle(color: AppColors.greenText)),
           ]),
           style: AppText.heroTitle.copyWith(fontSize: 46, height: 0.98),
         ),
@@ -129,11 +131,13 @@ class _CourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colour = AppColors.courseColour(course.id);
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(30),
+        shape: AppGlass.shape(30),
+        elevation: AppGlass.lift,
         child: InkWell(
           borderRadius: BorderRadius.circular(30),
           onTap: onTap,
@@ -142,13 +146,28 @@ class _CourseCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Expanded(child: Text(course.title, style: AppText.heroTitle.copyWith(fontSize: 28, height: 1.05))),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // The course's own colour (design move 3) as a short bar. The card shows
+                      // the name only (no code), as decided for this screen.
+                      Container(
+                        width: 34,
+                        height: 6,
+                        decoration: BoxDecoration(color: colour.fill, borderRadius: BorderRadius.circular(AppRadius.pill)),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(course.title, style: AppText.heroTitle.copyWith(fontSize: 28, height: 1.05)),
+                    ],
+                  ),
+                ),
                 const SizedBox(width: 12),
                 Container(
                   width: 44,
                   height: 44,
-                  decoration: const BoxDecoration(color: AppColors.text, shape: BoxShape.circle),
-                  child: const Icon(Icons.arrow_forward_rounded, color: AppColors.ground, size: 22),
+                  decoration: BoxDecoration(color: colour.fill, shape: BoxShape.circle),
+                  child: Icon(Icons.arrow_forward_rounded, color: AppColors.onGreen, size: 22),
                 ),
               ],
             ),
@@ -171,7 +190,7 @@ class _NewCourseCard extends StatelessWidget {
       color: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(30),
-        side: const BorderSide(color: AppColors.outline, width: 1.5),
+        side: BorderSide(color: AppColors.outline, width: 1.5),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(30),
@@ -181,7 +200,7 @@ class _NewCourseCard extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.add_rounded, color: AppColors.textMuted),
+              Icon(Icons.add_rounded, color: AppColors.textMuted),
               const SizedBox(width: 8),
               Text('New course', style: AppText.button.copyWith(color: AppColors.textMuted, fontSize: 15)),
             ],
@@ -202,7 +221,7 @@ class _FirstCourse extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(color: AppColors.card, borderRadius: BorderRadius.circular(AppRadius.card)),
+      decoration: AppGlass.box(AppRadius.card),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
